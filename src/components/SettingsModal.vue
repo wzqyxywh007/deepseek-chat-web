@@ -8,7 +8,8 @@
         </div>
 
         <div class="modal__body">
-          <!-- API Key -->
+
+          <!-- ── DeepSeek API Key ── -->
           <div class="form-group">
             <label class="form-label">
               DeepSeek API Key
@@ -32,48 +33,98 @@
             <p class="form-hint">Key 仅存储在本地浏览器，不会上传到任何服务器</p>
           </div>
 
-          <!-- 模型选择 -->
+          <!-- ── 豆包 API Key ── -->
+          <div class="form-group">
+            <label class="form-label">
+              豆包 API Key
+              <a href="https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey" target="_blank" class="form-label__link">
+                获取 Key →
+              </a>
+            </label>
+            <div class="input-wrap">
+              <input
+                v-model="form.doubaoApiKey"
+                :type="showDoubaoKey ? 'text' : 'password'"
+                class="form-input"
+                placeholder="火山引擎 API Key..."
+                autocomplete="off"
+                spellcheck="false"
+              />
+              <button class="input-toggle" @click="showDoubaoKey = !showDoubaoKey" :title="showDoubaoKey ? '隐藏' : '显示'">
+                {{ showDoubaoKey ? '🙈' : '👁️' }}
+              </button>
+            </div>
+            <p class="form-hint">Key 仅存储在本地浏览器，不会上传到任何服务器</p>
+          </div>
+
+          <!-- ── 模型选择（分组） ── -->
           <div class="form-group">
             <label class="form-label">模型</label>
+
+            <!-- DeepSeek 分组 -->
+            <p class="model-group-label">DeepSeek</p>
             <div class="model-options">
               <label
-                v-for="opt in MODEL_OPTIONS"
-                :key="opt.value"
+                v-for="opt in deepseekModels"
+                :key="opt.id"
                 class="model-option"
-                :class="{ 'model-option--active': form.model === opt.value }"
+                :class="{ 'model-option--active': form.model === opt.id }"
               >
-                <input type="radio" v-model="form.model" :value="opt.value" class="sr-only" />
+                <input type="radio" v-model="form.model" :value="opt.id" class="sr-only" />
                 <div class="model-option__content">
-                  <span class="model-option__name">{{ opt.label }}</span>
-                  <span class="model-option__desc">{{ opt.description }}</span>
+                  <span class="model-option__name">{{ opt.config.label }}</span>
+                  <span class="model-option__desc">{{ opt.config.description }}</span>
                 </div>
-                <span v-if="form.model === opt.value" class="model-option__check">✓</span>
+                <span v-if="form.model === opt.id" class="model-option__check">✓</span>
+              </label>
+            </div>
+
+            <!-- 豆包分组 -->
+            <p class="model-group-label" style="margin-top: 12px;">豆包（火山引擎）</p>
+            <div class="model-options">
+              <label
+                v-for="opt in doubaoModels"
+                :key="opt.id"
+                class="model-option"
+                :class="{ 'model-option--active': form.model === opt.id, 'model-option--image': opt.config.isImageModel }"
+              >
+                <input type="radio" v-model="form.model" :value="opt.id" class="sr-only" />
+                <div class="model-option__content">
+                  <span class="model-option__name">
+                    {{ opt.config.label }}
+                    <span v-if="opt.config.isImageModel" class="model-badge model-badge--image">图片生成</span>
+                  </span>
+                  <span class="model-option__desc">{{ opt.config.description }}</span>
+                </div>
+                <span v-if="form.model === opt.id" class="model-option__check">✓</span>
               </label>
             </div>
           </div>
 
-          <!-- 思考模式 -->
-          <div class="form-group">
-            <div class="toggle-row">
-              <div class="toggle-row__info">
-                <span class="toggle-row__label">思考模式</span>
-                <span class="toggle-row__desc">开启后 AI 会先进行深度推理再回答</span>
-              </div>
-              <button
-                class="toggle"
-                :class="{ 'toggle--on': form.thinkingMode }"
-                @click="form.thinkingMode = !form.thinkingMode"
-                :aria-pressed="form.thinkingMode"
-                aria-label="切换思考模式"
-              >
-                <span class="toggle__thumb" />
-              </button>
-            </div>
-          </div>
-
-          <!-- 思考深度（仅思考模式开启时显示） -->
+          <!-- ── 思考模式（仅 DeepSeek 模型显示） ── -->
           <Transition name="slide-down">
-            <div v-if="form.thinkingMode" class="form-group">
+            <div v-if="isDeepSeekModel" class="form-group">
+              <div class="toggle-row">
+                <div class="toggle-row__info">
+                  <span class="toggle-row__label">思考模式</span>
+                  <span class="toggle-row__desc">开启后 AI 会先进行深度推理再回答</span>
+                </div>
+                <button
+                  class="toggle"
+                  :class="{ 'toggle--on': form.thinkingMode }"
+                  @click="form.thinkingMode = !form.thinkingMode"
+                  :aria-pressed="form.thinkingMode"
+                  aria-label="切换思考模式"
+                >
+                  <span class="toggle__thumb" />
+                </button>
+              </div>
+            </div>
+          </Transition>
+
+          <!-- ── 思考深度（仅 DeepSeek + 思考模式开启） ── -->
+          <Transition name="slide-down">
+            <div v-if="isDeepSeekModel && form.thinkingMode" class="form-group">
               <label class="form-label">思考深度</label>
               <div class="effort-options">
                 <button
@@ -90,19 +141,21 @@
             </div>
           </Transition>
 
-          <!-- 系统提示词 -->
-          <div class="form-group">
-            <label class="form-label">系统提示词（可选）</label>
-            <textarea
-              v-model="form.systemPrompt"
-              class="form-textarea"
-              rows="3"
-              placeholder="例如：请用深入、温和的方式回答生活中的问题，给出具体可行的建议。"
-            />
-            <p class="form-hint">全局生效，影响所有对话的回答风格</p>
-          </div>
+          <!-- ── 系统提示词（图片模型隐藏） ── -->
+          <Transition name="slide-down">
+            <div v-if="!isImageModelSelected" class="form-group">
+              <label class="form-label">系统提示词（可选）</label>
+              <textarea
+                v-model="form.systemPrompt"
+                class="form-textarea"
+                rows="3"
+                placeholder="例如：请用深入、温和的方式回答生活中的问题，给出具体可行的建议。"
+              />
+              <p class="form-hint">全局生效，影响所有对话的回答风格</p>
+            </div>
+          </Transition>
 
-          <!-- 主题 -->
+          <!-- ── 主题 ── -->
           <div class="form-group">
             <label class="form-label">主题</label>
             <div class="theme-options">
@@ -130,9 +183,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useSettingsStore } from '@/stores/settings'
-import { MODEL_OPTIONS, REASONING_EFFORT_OPTIONS, type ModelId, type ThemeMode, type ReasoningEffort } from '@/types'
+import {
+  MODEL_CONFIGS,
+  REASONING_EFFORT_OPTIONS,
+  type ModelId,
+  type ThemeMode,
+  type ReasoningEffort,
+} from '@/types'
+import { isImageModel } from '@/api/index'
 
 const props = defineProps<{ visible: boolean }>()
 const emit = defineEmits<{ 'update:visible': [val: boolean] }>()
@@ -145,9 +205,17 @@ const THEME_OPTIONS: { value: ThemeMode; label: string; icon: string }[] = [
   { value: 'dark', label: '暗色', icon: '🌙' },
 ]
 
+// 将 MODEL_CONFIGS 转成有序列表，并按 Provider 分组
+const allModels = Object.entries(MODEL_CONFIGS).map(([id, config]) => ({ id: id as ModelId, config }))
+const deepseekModels = allModels.filter(m => m.config.provider === 'deepseek')
+const doubaoModels = allModels.filter(m => m.config.provider === 'doubao')
+
 const showKey = ref(false)
+const showDoubaoKey = ref(false)
+
 const form = ref({
   apiKey: '',
+  doubaoApiKey: '',
   model: 'deepseek-v4-pro' as ModelId,
   thinkingMode: true,
   reasoningEffort: 'high' as ReasoningEffort,
@@ -155,10 +223,14 @@ const form = ref({
   theme: 'system' as ThemeMode,
 })
 
+const isDeepSeekModel = computed(() => MODEL_CONFIGS[form.value.model]?.provider === 'deepseek')
+const isImageModelSelected = computed(() => isImageModel(form.value.model))
+
 watch(() => props.visible, (v) => {
   if (v) {
     form.value = {
       apiKey: settingsStore.apiKey,
+      doubaoApiKey: settingsStore.doubaoApiKey,
       model: settingsStore.model,
       thinkingMode: settingsStore.thinkingMode,
       reasoningEffort: settingsStore.reasoningEffort,
@@ -166,11 +238,13 @@ watch(() => props.visible, (v) => {
       theme: settingsStore.theme,
     }
     showKey.value = false
+    showDoubaoKey.value = false
   }
 })
 
 function save() {
   settingsStore.apiKey = form.value.apiKey.trim()
+  settingsStore.doubaoApiKey = form.value.doubaoApiKey.trim()
   settingsStore.model = form.value.model
   settingsStore.thinkingMode = form.value.thinkingMode
   settingsStore.reasoningEffort = form.value.reasoningEffort
@@ -321,17 +395,27 @@ function cancel() {
   margin-top: 6px;
 }
 
+/* 模型分组标题 */
+.model-group-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+
 .model-options {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .model-option {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 14px;
+  padding: 10px 14px;
   border: 1.5px solid var(--border-color);
   border-radius: var(--radius-md);
   cursor: pointer;
@@ -345,6 +429,14 @@ function cancel() {
   border-color: var(--accent);
   background: var(--accent-light);
 }
+.model-option--image.model-option--active {
+  border-color: var(--doubao-accent, #7c3aed);
+  background: var(--doubao-accent-light, rgba(124, 58, 237, 0.06));
+}
+.model-option--image:hover {
+  border-color: var(--doubao-accent, #7c3aed);
+  background: var(--doubao-accent-light, rgba(124, 58, 237, 0.06));
+}
 
 .model-option__content {
   display: flex;
@@ -355,6 +447,9 @@ function cancel() {
 .model-option__name {
   font-size: 14px;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .model-option__desc {
@@ -366,6 +461,19 @@ function cancel() {
   color: var(--accent);
   font-weight: 600;
   font-size: 16px;
+}
+
+/* 图片生成模型标签 */
+.model-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 10px;
+  line-height: 1.6;
+}
+.model-badge--image {
+  background: rgba(124, 58, 237, 0.12);
+  color: #7c3aed;
 }
 
 .sr-only {

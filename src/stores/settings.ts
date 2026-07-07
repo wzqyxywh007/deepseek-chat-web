@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, watch, ref } from 'vue'
 import type { ModelId, ThemeMode, ReasoningEffort, Settings } from '@/types'
-import { migrateModelId } from '@/types'
+import { migrateModelId, getProvider } from '@/types'
 import { storageGet, storageSet, STORAGE_KEYS } from '@/utils/storage'
 
 export const useSettingsStore = defineStore('settings', () => {
@@ -11,6 +11,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const migrated = migrateModelId(raw.model ?? 'deepseek-v4-pro')
 
   const apiKey = ref(raw.apiKey ?? '')
+  const doubaoApiKey = ref(raw.doubaoApiKey ?? '')
   const model = ref<ModelId>(migrated.model)
   // 若 localStorage 中已有明确的 thinkingMode，优先使用；否则用迁移结果
   const thinkingMode = ref<boolean>(raw.thinkingMode ?? migrated.thinkingMode)
@@ -18,11 +19,23 @@ export const useSettingsStore = defineStore('settings', () => {
   const systemPrompt = ref(raw.systemPrompt ?? '')
   const theme = ref<ThemeMode>(raw.theme ?? 'system')
 
-  const hasApiKey = computed(() => apiKey.value.trim().length > 0)
+  /** 根据当前模型的 Provider 判断对应 API Key 是否已填写 */
+  const hasApiKey = computed(() => {
+    const provider = getProvider(model.value)
+    if (provider === 'doubao') return doubaoApiKey.value.trim().length > 0
+    return apiKey.value.trim().length > 0
+  })
+
+  /** 获取当前模型对应的 API Key */
+  const currentApiKey = computed(() => {
+    const provider = getProvider(model.value)
+    return provider === 'doubao' ? doubaoApiKey.value : apiKey.value
+  })
 
   function save() {
     storageSet<Settings>(STORAGE_KEYS.SETTINGS, {
       apiKey: apiKey.value,
+      doubaoApiKey: doubaoApiKey.value,
       model: model.value,
       thinkingMode: thinkingMode.value,
       reasoningEffort: reasoningEffort.value,
@@ -31,7 +44,17 @@ export const useSettingsStore = defineStore('settings', () => {
     })
   }
 
-  watch([apiKey, model, thinkingMode, reasoningEffort, systemPrompt, theme], save)
+  watch([apiKey, doubaoApiKey, model, thinkingMode, reasoningEffort, systemPrompt, theme], save)
 
-  return { apiKey, model, thinkingMode, reasoningEffort, systemPrompt, theme, hasApiKey }
+  return {
+    apiKey,
+    doubaoApiKey,
+    model,
+    thinkingMode,
+    reasoningEffort,
+    systemPrompt,
+    theme,
+    hasApiKey,
+    currentApiKey,
+  }
 })

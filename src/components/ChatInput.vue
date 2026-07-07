@@ -25,7 +25,7 @@
         ref="textareaRef"
         v-model="inputText"
         class="chat-input__textarea"
-        :placeholder="hasApiKey ? '发消息给 DeepSeek...' : '请先在右上角设置中配置 API Key'"
+        :placeholder="inputPlaceholder"
         :disabled="!hasApiKey"
         rows="1"
         @input="autoResize"
@@ -46,6 +46,7 @@
           @change="handleFileChange"
         />
         <button
+          v-if="!isImageMode"
           class="upload-btn"
           :disabled="!hasApiKey"
           @click="fileInputRef?.click()"
@@ -95,6 +96,7 @@ import {
   type ParsedFile,
 } from '@/utils/fileParser'
 import { toast } from '@/utils/toast'
+import { isImageModel } from '@/api/index'
 
 const emit = defineEmits<{ 'open-settings': [] }>()
 
@@ -110,6 +112,13 @@ const parsing = ref(false)
 
 const hasApiKey = computed(() => settingsStore.hasApiKey)
 const isStreaming = computed(() => chatStore.isStreaming)
+const isImageMode = computed(() => isImageModel(settingsStore.model))
+
+const inputPlaceholder = computed(() => {
+  if (!hasApiKey.value) return '请先在右上角设置中配置 API Key'
+  if (isImageMode.value) return '描述你想生成的图片，例如：一只在雪中奔跑的橘猫...'
+  return '发消息给 AI...'
+})
 
 function fileIcon(f: ParsedFile): string {
   const ext = f.name.split('.').pop()?.toLowerCase() ?? ''

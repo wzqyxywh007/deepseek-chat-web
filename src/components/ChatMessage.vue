@@ -36,7 +36,20 @@
           <p v-if="message.content" class="message__text">{{ message.content }}</p>
         </template>
         <template v-else>
+          <!-- 豆包图片生成结果 -->
+          <div v-if="message.generatedImages?.length" class="generated-images">
+            <img
+              v-for="url in message.generatedImages"
+              :key="url"
+              :src="url"
+              class="generated-image"
+              alt="AI 生成图片"
+              loading="lazy"
+            />
+          </div>
+          <!-- 文字内容（流式 loading 动画 / Markdown） -->
           <div
+            v-if="message.content || message.isStreaming"
             ref="mdContainer"
             class="message__markdown"
             v-html="renderedContent"
@@ -273,6 +286,27 @@ function handleRegenerate() {
 .att-chip__warn {
   font-size: 12px;
   flex-shrink: 0;
+}
+
+/* 豆包生成图片 */
+.generated-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.generated-image {
+  max-width: 100%;
+  width: auto;
+  max-height: 480px;
+  border-radius: var(--radius-md);
+  display: block;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  cursor: zoom-in;
+}
+.generated-image:hover {
+  opacity: 0.95;
 }
 
 /* 操作栏 */

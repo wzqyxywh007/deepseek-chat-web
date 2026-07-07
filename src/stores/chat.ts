@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import type { Session, Message, ChatMessage } from '@/types'
 import { storageGet, storageSet, STORAGE_KEYS } from '@/utils/storage'
-import { streamChat } from '@/api/deepseek'
+import { callChatAPI, callImageAPI, isImageModel } from '@/api/index'
 import { useSettingsStore } from './settings'
 import { toast, translateApiError } from '@/utils/toast'
 import type { ParsedFile } from '@/utils/fileParser'
@@ -99,6 +99,34 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  // ─── 图片生成分支 ───────────────────────────────────────────────────────────
+
+  async function handleImageGeneration(
+    session: ReturnType<typeof createNewSession>,
+    prompt: string,
+    reactiveAiMsg: Message,
+  ) {
+    try {
+      const urls = await callImageAPI(
+        prompt,
+        settingsStore.doubaoApiKey,
+        settingsStore.model,
+      )
+      reactiveAiMsg.generatedImages = urls
+      reactiveAiMsg.content = ''
+      reactiveAiMsg.isStreaming = false
+      session.updatedAt = Date.now()
+    } catch (err) {
+      reactiveAiMsg.isStreaming = false
+      const { message, detail } = translateApiError((err as Error).message)
+      reactiveAiMsg.content = message
+      reactiveAiMsg.isError = true
+      toast.error(message, detail)
+    }
+  }
+
+  // ─── sendMessage ────────────────────────────────────────────────────────────
+
   async function sendMessage(userContent: string, attachments: ParsedFile[] = []) {
     const session = currentSession.value
     if (!session) return
@@ -117,7 +145,7 @@ export const useChatStore = defineStore('chat', () => {
     session.messages.push(userMsg)
 
     if (session.title === '新对话' && session.messages.length === 1) {
-      session.title = trimmed.slice(0, 20)
+      session.title = trimmed.slice(0, 20) || '图片生成'
     }
 
     const aiMsg: Message = {
@@ -134,7 +162,13 @@ export const useChatStore = defineStore('chat', () => {
     // push 之后从响应式数组取回 Proxy 版本，确保回调中的赋值能触发 Vue 更新
     const reactiveAiMsg = session.messages[session.messages.length - 1]
 
-    // 历史消息（文本），当前消息用完整内容（含文件/图片）
+    // ── 图片生成模式 ──
+    if (isImageModel(settingsStore.model)) {
+      await handleImageGeneration(session as unknown as ReturnType<typeof createNewSession>, trimmed, reactiveAiMsg)
+      return
+    }
+
+    // ── 文字对话模式 ──
     const pastHistory: ChatMessage[] = session.messages
       .filter(m => !m.isStreaming && m.id !== reactiveAiMsg.id && m.id !== userMsg.id)
       .map(m => ({ role: m.role, content: m.content }))
@@ -148,9 +182,9 @@ export const useChatStore = defineStore('chat', () => {
     abortController = new AbortController()
 
     try {
-      await streamChat({
+      await callChatAPI({
         messages: history,
-        apiKey: settingsStore.apiKey,
+        apiKey: settingsStore.currentApiKey,
         model: settingsStore.model,
         thinkingMode: settingsStore.thinkingMode,
         reasoningEffort: settingsStore.reasoningEffort,
@@ -179,11 +213,15 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  // ─── isStreaming ─────────────────────────────────────────────────────────────
+
   const isStreaming = computed(() => {
     const session = currentSession.value
     if (!session) return false
     return session.messages.some(m => m.isStreaming)
   })
+
+  // ─── regenerateMessage ───────────────────────────────────────────────────────
 
   async function regenerateMessage(aiMessageId: string) {
     const session = currentSession.value
@@ -192,18 +230,10 @@ export const useChatStore = defineStore('chat', () => {
     const idx = session.messages.findIndex(m => m.id === aiMessageId)
     if (idx === -1 || session.messages[idx].role !== 'assistant') return
 
-    // 找到这条 AI 消息之前最近的一条用户消息
     const prevUserMsg = [...session.messages].slice(0, idx).reverse().find(m => m.role === 'user')
     if (!prevUserMsg) return
 
-    // 移除这条 AI 消息及其之后的所有消息，保留到该用户消息为止
     session.messages.splice(idx)
-
-    // 重新构建历史（不含刚刚移除的 AI 消息）
-    const history = buildApiMessages(
-      session.messages.map(m => ({ role: m.role, content: m.content })),
-      settingsStore.systemPrompt,
-    )
 
     const aiMsg: Message = {
       id: generateId(),
@@ -218,12 +248,25 @@ export const useChatStore = defineStore('chat', () => {
 
     const reactiveAiMsg = session.messages[session.messages.length - 1]
 
+    // 图片模型重新生成
+    if (isImageModel(settingsStore.model)) {
+      await handleImageGeneration(session as unknown as ReturnType<typeof createNewSession>, prevUserMsg.content, reactiveAiMsg)
+      return
+    }
+
+    const history = buildApiMessages(
+      session.messages
+        .filter(m => !m.isStreaming && m.id !== reactiveAiMsg.id)
+        .map(m => ({ role: m.role, content: m.content })),
+      settingsStore.systemPrompt,
+    )
+
     abortController = new AbortController()
 
     try {
-      await streamChat({
+      await callChatAPI({
         messages: history,
-        apiKey: settingsStore.apiKey,
+        apiKey: settingsStore.currentApiKey,
         model: settingsStore.model,
         thinkingMode: settingsStore.thinkingMode,
         reasoningEffort: settingsStore.reasoningEffort,
