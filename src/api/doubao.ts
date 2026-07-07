@@ -112,7 +112,7 @@ export interface DoubaoImageOptions {
 
 /** 豆包图片生成（非流式，直接返回图片 URL 数组） */
 export async function generateDoubaoImage(options: DoubaoImageOptions): Promise<string[]> {
-  const { prompt, apiKey, model, size = '1024x1024', n = 1, proxyUrl } = options
+  const { prompt, apiKey, model, size = '2048x2048', n = 1, proxyUrl } = options
   const imageUrl = buildUrl('/api/v3/images/generations', proxyUrl)
 
   const response = await fetch(imageUrl, {
