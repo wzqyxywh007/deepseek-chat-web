@@ -1,7 +1,8 @@
 import type { ChatMessage } from '@/types'
 import type { StreamChatOptions } from './deepseek'
 
-const DOUBAO_BASE = 'https://ark.volcengine.com'
+// 火山方舟数据面域名（用于模型调用），管控面 ark.volcengine.com 不支持 API 调用
+const DOUBAO_BASE = 'https://ark.cn-beijing.volces.com'
 
 /** 根据代理地址拼接最终 URL。proxyUrl 为空时直连（可能跨域） */
 function buildUrl(path: string, proxyUrl?: string): string {

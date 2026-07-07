@@ -91,7 +91,8 @@
     }
 
     const url = new URL(request.url)
-    const target = 'https://ark.volcengine.com' + url.pathname + url.search
+    // 数据面域名，用于模型调用（ark.volcengine.com 是管控面，不用于 API）
+    const target = 'https://ark.cn-beijing.volces.com' + url.pathname + url.search
 
     const reqHeaders = new Headers()
     const auth = request.headers.get('Authorization')
@@ -107,11 +108,10 @@
       redirect: 'manual', // 禁止跟随重定向，避免返回控制台 HTML
     })
 
-    // 服务端返回重定向 = 认证失败或路径错误，返回可读的错误 JSON
+    // 服务端返回重定向 = 认证失败，返回可读的 JSON 错误
     if (resp.status >= 300 && resp.status < 400) {
-      const location = resp.headers.get('location') ?? '(unknown)'
       return new Response(
-        JSON.stringify({ error: { message: `API redirected to ${location}. Check your API key.` } }),
+        JSON.stringify({ error: { message: 'API key invalid or expired. Check your API key.' } }),
         { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } },
       )
     }
