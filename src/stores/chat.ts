@@ -4,6 +4,7 @@ import type { Session, Message, ChatMessage } from '@/types'
 import { storageGet, storageSet, STORAGE_KEYS } from '@/utils/storage'
 import { streamChat } from '@/api/deepseek'
 import { useSettingsStore } from './settings'
+import { toast, translateApiError } from '@/utils/toast'
 
 function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2)
@@ -143,8 +144,10 @@ export const useChatStore = defineStore('chat', () => {
           aiMsg.isStreaming = false
           abortController = null
           if ((err as Error).name !== 'AbortError') {
-            aiMsg.content = `请求失败：${(err as Error).message}`
+            const { message, detail } = translateApiError((err as Error).message)
+            aiMsg.content = message
             aiMsg.isError = true
+            toast.error(message, detail)
           }
         },
         signal: abortController.signal,
@@ -209,8 +212,10 @@ export const useChatStore = defineStore('chat', () => {
           aiMsg.isStreaming = false
           abortController = null
           if ((err as Error).name !== 'AbortError') {
-            aiMsg.content = `请求失败：${(err as Error).message}`
+            const { message, detail } = translateApiError((err as Error).message)
+            aiMsg.content = message
             aiMsg.isError = true
+            toast.error(message, detail)
           }
         },
         signal: abortController.signal,

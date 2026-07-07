@@ -37,6 +37,9 @@
 
     <!-- 设置弹窗 -->
     <SettingsModal v-model:visible="showSettings" />
+
+    <!-- 全局 Toast 通知 -->
+    <ToastContainer />
   </div>
 </template>
 
@@ -46,6 +49,7 @@ import Sidebar from '@/components/Sidebar.vue'
 import MessageList from '@/components/MessageList.vue'
 import ChatInput from '@/components/ChatInput.vue'
 import SettingsModal from '@/components/SettingsModal.vue'
+import ToastContainer from '@/components/ToastContainer.vue'
 import { useChatStore } from '@/stores/chat'
 import { useSettingsStore } from '@/stores/settings'
 
