@@ -90,6 +90,18 @@
             </div>
           </Transition>
 
+          <!-- 系统提示词 -->
+          <div class="form-group">
+            <label class="form-label">系统提示词（可选）</label>
+            <textarea
+              v-model="form.systemPrompt"
+              class="form-textarea"
+              rows="3"
+              placeholder="例如：请用深入、温和的方式回答生活中的问题，给出具体可行的建议。"
+            />
+            <p class="form-hint">全局生效，影响所有对话的回答风格</p>
+          </div>
+
           <!-- 主题 -->
           <div class="form-group">
             <label class="form-label">主题</label>
@@ -139,6 +151,7 @@ const form = ref({
   model: 'deepseek-v4-pro' as ModelId,
   thinkingMode: true,
   reasoningEffort: 'high' as ReasoningEffort,
+  systemPrompt: '',
   theme: 'system' as ThemeMode,
 })
 
@@ -149,6 +162,7 @@ watch(() => props.visible, (v) => {
       model: settingsStore.model,
       thinkingMode: settingsStore.thinkingMode,
       reasoningEffort: settingsStore.reasoningEffort,
+      systemPrompt: settingsStore.systemPrompt,
       theme: settingsStore.theme,
     }
     showKey.value = false
@@ -160,6 +174,7 @@ function save() {
   settingsStore.model = form.value.model
   settingsStore.thinkingMode = form.value.thinkingMode
   settingsStore.reasoningEffort = form.value.reasoningEffort
+  settingsStore.systemPrompt = form.value.systemPrompt.trim()
   settingsStore.theme = form.value.theme
   emit('update:visible', false)
 }
@@ -268,6 +283,22 @@ function cancel() {
   transition: border-color var(--transition);
 }
 .form-input:focus {
+  border-color: var(--accent);
+}
+
+.form-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  font-size: 14px;
+  line-height: 1.6;
+  resize: vertical;
+  min-height: 72px;
+  transition: border-color var(--transition);
+}
+.form-textarea:focus {
   border-color: var(--accent);
 }
 

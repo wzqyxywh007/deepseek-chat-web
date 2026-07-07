@@ -10,6 +10,12 @@ function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2)
 }
 
+function buildApiMessages(history: ChatMessage[], systemPrompt: string): ChatMessage[] {
+  const trimmed = systemPrompt.trim()
+  if (!trimmed) return history
+  return [{ role: 'system', content: trimmed }, ...history]
+}
+
 function createNewSession(): Session {
   const now = Date.now()
   return {
@@ -123,9 +129,12 @@ export const useChatStore = defineStore('chat', () => {
     // push 之后从响应式数组取回 Proxy 版本，确保回调中的赋值能触发 Vue 更新
     const reactiveAiMsg = session.messages[session.messages.length - 1]
 
-    const history: ChatMessage[] = session.messages
-      .filter(m => !m.isStreaming && m.id !== reactiveAiMsg.id)
-      .map(m => ({ role: m.role, content: m.content }))
+    const history = buildApiMessages(
+      session.messages
+        .filter(m => !m.isStreaming && m.id !== reactiveAiMsg.id)
+        .map(m => ({ role: m.role, content: m.content })),
+      settingsStore.systemPrompt,
+    )
 
     abortController = new AbortController()
 
@@ -182,7 +191,10 @@ export const useChatStore = defineStore('chat', () => {
     session.messages.splice(idx)
 
     // 重新构建历史（不含刚刚移除的 AI 消息）
-    const history: ChatMessage[] = session.messages.map(m => ({ role: m.role, content: m.content }))
+    const history = buildApiMessages(
+      session.messages.map(m => ({ role: m.role, content: m.content })),
+      settingsStore.systemPrompt,
+    )
 
     const aiMsg: Message = {
       id: generateId(),

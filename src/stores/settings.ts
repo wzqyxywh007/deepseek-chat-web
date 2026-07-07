@@ -15,6 +15,7 @@ export const useSettingsStore = defineStore('settings', () => {
   // 若 localStorage 中已有明确的 thinkingMode，优先使用；否则用迁移结果
   const thinkingMode = ref<boolean>(raw.thinkingMode ?? migrated.thinkingMode)
   const reasoningEffort = ref<ReasoningEffort>(raw.reasoningEffort ?? 'high')
+  const systemPrompt = ref(raw.systemPrompt ?? '')
   const theme = ref<ThemeMode>(raw.theme ?? 'system')
 
   const hasApiKey = computed(() => apiKey.value.trim().length > 0)
@@ -25,11 +26,12 @@ export const useSettingsStore = defineStore('settings', () => {
       model: model.value,
       thinkingMode: thinkingMode.value,
       reasoningEffort: reasoningEffort.value,
+      systemPrompt: systemPrompt.value,
       theme: theme.value,
     })
   }
 
-  watch([apiKey, model, thinkingMode, reasoningEffort, theme], save)
+  watch([apiKey, model, thinkingMode, reasoningEffort, systemPrompt, theme], save)
 
-  return { apiKey, model, thinkingMode, reasoningEffort, theme, hasApiKey }
+  return { apiKey, model, thinkingMode, reasoningEffort, systemPrompt, theme, hasApiKey }
 })

@@ -25,6 +25,7 @@ export interface Settings {
   model: ModelId
   thinkingMode: boolean
   reasoningEffort: ReasoningEffort
+  systemPrompt: string
   theme: ThemeMode
 }
 
