@@ -1,12 +1,18 @@
 import type { ChatMessage } from '@/types'
 import type { StreamChatOptions } from './deepseek'
 
-const DOUBAO_CHAT_URL = 'https://ark.volcengine.com/api/v3/chat/completions'
-const DOUBAO_IMAGE_URL = 'https://ark.volcengine.com/api/v3/images/generations'
+const DOUBAO_BASE = 'https://ark.volcengine.com'
+
+/** 根据代理地址拼接最终 URL。proxyUrl 为空时直连（可能跨域） */
+function buildUrl(path: string, proxyUrl?: string): string {
+  const base = proxyUrl ? proxyUrl.replace(/\/$/, '') : DOUBAO_BASE
+  return `${base}${path}`
+}
 
 /** 豆包流式对话（复用 StreamChatOptions 接口，thinkingMode / reasoningEffort 字段忽略） */
-export async function streamDoubaoChat(options: StreamChatOptions): Promise<void> {
-  const { messages, apiKey, model, onContent, onDone, onError, signal } = options
+export async function streamDoubaoChat(options: StreamChatOptions & { proxyUrl?: string }): Promise<void> {
+  const { messages, apiKey, model, onContent, onDone, onError, signal, proxyUrl } = options
+  const chatUrl = buildUrl('/api/v3/chat/completions', proxyUrl)
 
   const body = {
     model,
@@ -16,7 +22,7 @@ export async function streamDoubaoChat(options: StreamChatOptions): Promise<void
 
   let response: Response
   try {
-    response = await fetch(DOUBAO_CHAT_URL, {
+    response = await fetch(chatUrl, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -89,13 +95,15 @@ export interface DoubaoImageOptions {
   size?: string
   /** 生成数量，默认 1 */
   n?: number
+  proxyUrl?: string
 }
 
 /** 豆包图片生成（非流式，直接返回图片 URL 数组） */
 export async function generateDoubaoImage(options: DoubaoImageOptions): Promise<string[]> {
-  const { prompt, apiKey, model, size = '1024x1024', n = 1 } = options
+  const { prompt, apiKey, model, size = '1024x1024', n = 1, proxyUrl } = options
+  const imageUrl = buildUrl('/api/v3/images/generations', proxyUrl)
 
-  const response = await fetch(DOUBAO_IMAGE_URL, {
+  const response = await fetch(imageUrl, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${apiKey}`,

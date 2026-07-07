@@ -111,6 +111,7 @@ export const useChatStore = defineStore('chat', () => {
         prompt,
         settingsStore.doubaoApiKey,
         settingsStore.model,
+        settingsStore.doubaoProxyUrl || undefined,
       )
       reactiveAiMsg.generatedImages = urls
       reactiveAiMsg.content = ''
@@ -188,6 +189,7 @@ export const useChatStore = defineStore('chat', () => {
         model: settingsStore.model,
         thinkingMode: settingsStore.thinkingMode,
         reasoningEffort: settingsStore.reasoningEffort,
+        proxyUrl: settingsStore.doubaoProxyUrl || undefined,
         onReasoning: (delta) => { reactiveAiMsg.reasoningContent = (reactiveAiMsg.reasoningContent ?? '') + delta },
         onContent: (delta) => { reactiveAiMsg.content += delta },
         onDone: () => {
@@ -270,6 +272,7 @@ export const useChatStore = defineStore('chat', () => {
         model: settingsStore.model,
         thinkingMode: settingsStore.thinkingMode,
         reasoningEffort: settingsStore.reasoningEffort,
+        proxyUrl: settingsStore.doubaoProxyUrl || undefined,
         onReasoning: (delta) => { reactiveAiMsg.reasoningContent = (reactiveAiMsg.reasoningContent ?? '') + delta },
         onContent: (delta) => { reactiveAiMsg.content += delta },
         onDone: () => {

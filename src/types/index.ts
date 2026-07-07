@@ -121,6 +121,8 @@ export interface Session {
 export interface Settings {
   apiKey: string
   doubaoApiKey: string
+  /** 豆包 CORS 代理地址，例如：https://my-worker.username.workers.dev */
+  doubaoProxyUrl: string
   model: ModelId
   thinkingMode: boolean
   reasoningEffort: ReasoningEffort

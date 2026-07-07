@@ -57,6 +57,53 @@
             <p class="form-hint">Key 仅存储在本地浏览器，不会上传到任何服务器</p>
           </div>
 
+          <!-- ── 豆包 CORS 代理地址 ── -->
+          <div class="form-group">
+            <label class="form-label">
+              豆包代理地址
+              <span class="form-label__tag">解决跨域</span>
+            </label>
+            <input
+              v-model="form.doubaoProxyUrl"
+              type="text"
+              class="form-input"
+              placeholder="https://your-worker.username.workers.dev"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <p class="form-hint">
+              豆包 API 不支持浏览器直连，需部署一个 Cloudflare Workers 代理。
+              <a href="https://dash.cloudflare.com/workers-and-pages" target="_blank" class="form-hint__link">去创建 →</a>
+            </p>
+            <details class="worker-code">
+              <summary class="worker-code__title">查看 Worker 代码（粘贴即用）</summary>
+              <pre class="worker-code__pre"><code>export default {
+  async fetch(request) {
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+      })
+    }
+    const url = new URL(request.url)
+    const target = 'https://ark.volcengine.com' + url.pathname + url.search
+    const resp = await fetch(target, {
+      method: request.method,
+      headers: request.headers,
+      body: request.body,
+    })
+    const headers = new Headers(resp.headers)
+    headers.set('Access-Control-Allow-Origin', '*')
+    return new Response(resp.body, { status: resp.status, headers })
+  },
+}</code></pre>
+            </details>
+          </div>
+
           <!-- ── 模型选择（分组） ── -->
           <div class="form-group">
             <label class="form-label">模型</label>
@@ -216,6 +263,7 @@ const showDoubaoKey = ref(false)
 const form = ref({
   apiKey: '',
   doubaoApiKey: '',
+  doubaoProxyUrl: '',
   model: 'deepseek-v4-pro' as ModelId,
   thinkingMode: true,
   reasoningEffort: 'high' as ReasoningEffort,
@@ -231,6 +279,7 @@ watch(() => props.visible, (v) => {
     form.value = {
       apiKey: settingsStore.apiKey,
       doubaoApiKey: settingsStore.doubaoApiKey,
+      doubaoProxyUrl: settingsStore.doubaoProxyUrl,
       model: settingsStore.model,
       thinkingMode: settingsStore.thinkingMode,
       reasoningEffort: settingsStore.reasoningEffort,
@@ -245,6 +294,7 @@ watch(() => props.visible, (v) => {
 function save() {
   settingsStore.apiKey = form.value.apiKey.trim()
   settingsStore.doubaoApiKey = form.value.doubaoApiKey.trim()
+  settingsStore.doubaoProxyUrl = form.value.doubaoProxyUrl.trim()
   settingsStore.model = form.value.model
   settingsStore.thinkingMode = form.value.thinkingMode
   settingsStore.reasoningEffort = form.value.reasoningEffort
@@ -393,6 +443,51 @@ function cancel() {
   font-size: 12px;
   color: var(--text-muted);
   margin-top: 6px;
+}
+
+/* 代理说明 */
+.form-label__tag {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: rgba(234, 88, 12, 0.1);
+  color: #ea580c;
+}
+
+.form-hint__link {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.worker-code {
+  margin-top: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.worker-code__title {
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  background: var(--bg-secondary);
+  user-select: none;
+}
+.worker-code__title:hover {
+  background: var(--bg-hover);
+}
+
+.worker-code__pre {
+  margin: 0;
+  padding: 12px;
+  background: var(--bg-code, #1e1e1e);
+  font-size: 11px;
+  line-height: 1.6;
+  overflow-x: auto;
+  color: #d4d4d4;
 }
 
 /* 模型分组标题 */
