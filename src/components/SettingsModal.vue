@@ -93,20 +93,28 @@
     const url = new URL(request.url)
     const target = 'https://ark.volcengine.com' + url.pathname + url.search
 
-    // 只保留业务必需的请求头，避免 Cloudflare 内部头干扰服务器路由
     const reqHeaders = new Headers()
     const auth = request.headers.get('Authorization')
     const ct   = request.headers.get('Content-Type')
     if (auth) reqHeaders.set('Authorization', auth)
     if (ct)   reqHeaders.set('Content-Type', ct)
-    reqHeaders.set('Host', 'ark.volcengine.com')
-    reqHeaders.set('Accept', 'text/event-stream, application/json')
+    reqHeaders.set('Accept', 'application/json, text/event-stream')
 
     const resp = await fetch(target, {
-      method:  request.method,
-      headers: reqHeaders,
-      body:    request.body,
+      method:   request.method,
+      headers:  reqHeaders,
+      body:     request.method !== 'GET' ? request.body : undefined,
+      redirect: 'manual', // 禁止跟随重定向，避免返回控制台 HTML
     })
+
+    // 服务端返回重定向 = 认证失败或路径错误，返回可读的错误 JSON
+    if (resp.status >= 300 && resp.status < 400) {
+      const location = resp.headers.get('location') ?? '(unknown)'
+      return new Response(
+        JSON.stringify({ error: { message: `API redirected to ${location}. Check your API key.` } }),
+        { status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } },
+      )
+    }
 
     const respHeaders = new Headers(resp.headers)
     respHeaders.set('Access-Control-Allow-Origin', '*')

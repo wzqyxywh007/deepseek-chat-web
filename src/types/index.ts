@@ -48,7 +48,7 @@ export const MODEL_CONFIGS: Record<ModelId, ModelConfig> = {
     provider: 'doubao',
     label: '豆包 图片生成',
     description: '描述画面，AI 一键生图',
-    apiModelName: 'doubao-seedream-3-0-t2i-250415',
+    apiModelName: 'doubao-seedream-5-0-260128',
     isImageModel: true,
   },
 }

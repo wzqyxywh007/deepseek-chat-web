@@ -46,6 +46,12 @@ export function translateApiError(raw: string): { message: string; detail?: stri
       detail: '请在设置中检查 API Key 是否正确',
     }
   }
+  if (raw.includes('redirected') || raw.includes('Check your API key')) {
+    return {
+      message: '豆包 API Key 无效或未填写',
+      detail: '请确认已在设置中填写正确的豆包 API Key（格式：KeyID.KeySecret）',
+    }
+  }
   if (raw.includes('Rate limit') || raw.includes('rate_limit')) {
     return {
       message: '请求过于频繁',
