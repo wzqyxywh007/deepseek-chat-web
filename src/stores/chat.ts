@@ -120,8 +120,11 @@ export const useChatStore = defineStore('chat', () => {
     session.messages.push(aiMsg)
     session.updatedAt = Date.now()
 
+    // push 之后从响应式数组取回 Proxy 版本，确保回调中的赋值能触发 Vue 更新
+    const reactiveAiMsg = session.messages[session.messages.length - 1]
+
     const history: ChatMessage[] = session.messages
-      .filter(m => !m.isStreaming && m.id !== aiMsg.id)
+      .filter(m => !m.isStreaming && m.id !== reactiveAiMsg.id)
       .map(m => ({ role: m.role, content: m.content }))
 
     abortController = new AbortController()
@@ -133,27 +136,27 @@ export const useChatStore = defineStore('chat', () => {
         model: settingsStore.model,
         thinkingMode: settingsStore.thinkingMode,
         reasoningEffort: settingsStore.reasoningEffort,
-        onReasoning: (delta) => { aiMsg.reasoningContent = (aiMsg.reasoningContent ?? '') + delta },
-        onContent: (delta) => { aiMsg.content += delta },
+        onReasoning: (delta) => { reactiveAiMsg.reasoningContent = (reactiveAiMsg.reasoningContent ?? '') + delta },
+        onContent: (delta) => { reactiveAiMsg.content += delta },
         onDone: () => {
-          aiMsg.isStreaming = false
+          reactiveAiMsg.isStreaming = false
           abortController = null
           session.updatedAt = Date.now()
         },
         onError: (err) => {
-          aiMsg.isStreaming = false
+          reactiveAiMsg.isStreaming = false
           abortController = null
           if ((err as Error).name !== 'AbortError') {
             const { message, detail } = translateApiError((err as Error).message)
-            aiMsg.content = message
-            aiMsg.isError = true
+            reactiveAiMsg.content = message
+            reactiveAiMsg.isError = true
             toast.error(message, detail)
           }
         },
         signal: abortController.signal,
       })
     } catch (e) {
-      aiMsg.isStreaming = false
+      reactiveAiMsg.isStreaming = false
       abortController = null
     }
   }
@@ -192,6 +195,8 @@ export const useChatStore = defineStore('chat', () => {
     session.messages.push(aiMsg)
     session.updatedAt = Date.now()
 
+    const reactiveAiMsg = session.messages[session.messages.length - 1]
+
     abortController = new AbortController()
 
     try {
@@ -201,27 +206,27 @@ export const useChatStore = defineStore('chat', () => {
         model: settingsStore.model,
         thinkingMode: settingsStore.thinkingMode,
         reasoningEffort: settingsStore.reasoningEffort,
-        onReasoning: (delta) => { aiMsg.reasoningContent = (aiMsg.reasoningContent ?? '') + delta },
-        onContent: (delta) => { aiMsg.content += delta },
+        onReasoning: (delta) => { reactiveAiMsg.reasoningContent = (reactiveAiMsg.reasoningContent ?? '') + delta },
+        onContent: (delta) => { reactiveAiMsg.content += delta },
         onDone: () => {
-          aiMsg.isStreaming = false
+          reactiveAiMsg.isStreaming = false
           abortController = null
           session.updatedAt = Date.now()
         },
         onError: (err) => {
-          aiMsg.isStreaming = false
+          reactiveAiMsg.isStreaming = false
           abortController = null
           if ((err as Error).name !== 'AbortError') {
             const { message, detail } = translateApiError((err as Error).message)
-            aiMsg.content = message
-            aiMsg.isError = true
+            reactiveAiMsg.content = message
+            reactiveAiMsg.isError = true
             toast.error(message, detail)
           }
         },
         signal: abortController.signal,
       })
     } catch (e) {
-      aiMsg.isStreaming = false
+      reactiveAiMsg.isStreaming = false
       abortController = null
     }
   }
