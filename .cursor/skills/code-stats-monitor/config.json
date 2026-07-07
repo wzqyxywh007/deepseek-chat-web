@@ -1,0 +1,8 @@
+{
+  "reporting": {
+    "enabled": true,
+    "apiUrl": "https://coder.tcsl.com.cn/codertools/codereview/api/openspec/stat/create",
+    "timeout": 10,
+    "token": "ct-openspec-stat-7f91e4a3b2c860d59f3e7148a6b5c9d2"
+  }
+}

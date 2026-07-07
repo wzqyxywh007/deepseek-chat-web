@@ -1,0 +1,107 @@
+:root {
+  /* 背景色 */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --bg-sidebar: #f0f0f0;
+  --bg-input: #ffffff;
+  --bg-hover: #e8e8e8;
+  --bg-active: #dce3f0;
+  --bg-overlay: rgba(0, 0, 0, 0.4);
+
+  /* 消息气泡 */
+  --bubble-user-bg: #1a6bf7;
+  --bubble-user-text: #ffffff;
+  --bubble-ai-bg: #ffffff;
+  --bubble-ai-text: #1a1a1a;
+
+  /* 思考链面板 */
+  --reasoning-bg: #eef4ff;
+  --reasoning-border: #4a90e2;
+  --reasoning-text: #444;
+
+  /* 文字色 */
+  --text-primary: #1a1a1a;
+  --text-secondary: #666666;
+  --text-placeholder: #aaaaaa;
+  --text-muted: #999999;
+
+  /* 边框 */
+  --border-color: #e0e0e0;
+  --border-input: #d0d0d0;
+
+  /* 强调色 */
+  --accent: #1a6bf7;
+  --accent-hover: #1558d0;
+  --accent-light: #e8f0fe;
+
+  /* 危险色 */
+  --danger: #e53935;
+  --danger-hover: #c62828;
+
+  /* 代码块 */
+  --code-bg: #f6f8fa;
+  --code-border: #e1e4e8;
+  --code-header-bg: #eaecef;
+
+  /* 阴影 */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+
+  /* 圆角 */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+
+  /* 过渡 */
+  --transition: 0.2s ease;
+
+  /* 侧边栏宽度 */
+  --sidebar-width: 260px;
+
+  /* 内容最大宽度 */
+  --content-max-width: 800px;
+}
+
+[data-theme='dark'] {
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #242424;
+  --bg-sidebar: #111111;
+  --bg-input: #2a2a2a;
+  --bg-hover: #2e2e2e;
+  --bg-active: #1e3a5f;
+  --bg-overlay: rgba(0, 0, 0, 0.6);
+
+  --bubble-user-bg: #1a6bf7;
+  --bubble-user-text: #ffffff;
+  --bubble-ai-bg: #242424;
+  --bubble-ai-text: #e8e8e8;
+
+  --reasoning-bg: #1a2a3f;
+  --reasoning-border: #4a90e2;
+  --reasoning-text: #aac8e8;
+
+  --text-primary: #e8e8e8;
+  --text-secondary: #aaaaaa;
+  --text-placeholder: #666666;
+  --text-muted: #777777;
+
+  --border-color: #333333;
+  --border-input: #404040;
+
+  --accent: #4a90e2;
+  --accent-hover: #3a80d2;
+  --accent-light: #1a2a3f;
+
+  --danger: #ef5350;
+  --danger-hover: #d32f2f;
+
+  --code-bg: #1e1e1e;
+  --code-border: #333333;
+  --code-header-bg: #252525;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+}

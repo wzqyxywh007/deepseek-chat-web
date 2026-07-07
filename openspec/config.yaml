@@ -1,0 +1,17 @@
+schema: spec-driven
+
+context: |
+  项目：DeepSeek Chat Web —— 仿 DeepSeek 官网的纯前端对话应用
+  技术栈: Vue3, TypeScript, Pinia, Axios, Vite
+  部署目标: GitHub Pages（静态站点，无后端）
+  语言：中文（简体）
+  所有产出物必须用简体中文撰写
+
+rules:
+  proposal:
+    - 需求背景
+    - 改动描述
+    - 不涉及的内容
+  tasks:
+    - 按模块拆分任务
+    - 每个任务粒度为独立可验证的小步骤
