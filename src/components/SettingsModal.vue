@@ -89,16 +89,34 @@
         },
       })
     }
+
     const url = new URL(request.url)
     const target = 'https://ark.volcengine.com' + url.pathname + url.search
+
+    // 只保留业务必需的请求头，避免 Cloudflare 内部头干扰服务器路由
+    const reqHeaders = new Headers()
+    const auth = request.headers.get('Authorization')
+    const ct   = request.headers.get('Content-Type')
+    if (auth) reqHeaders.set('Authorization', auth)
+    if (ct)   reqHeaders.set('Content-Type', ct)
+    reqHeaders.set('Host', 'ark.volcengine.com')
+    reqHeaders.set('Accept', 'text/event-stream, application/json')
+
     const resp = await fetch(target, {
-      method: request.method,
-      headers: request.headers,
-      body: request.body,
+      method:  request.method,
+      headers: reqHeaders,
+      body:    request.body,
     })
-    const headers = new Headers(resp.headers)
-    headers.set('Access-Control-Allow-Origin', '*')
-    return new Response(resp.body, { status: resp.status, headers })
+
+    const respHeaders = new Headers(resp.headers)
+    respHeaders.set('Access-Control-Allow-Origin', '*')
+    respHeaders.delete('Content-Security-Policy')
+
+    return new Response(resp.body, {
+      status:     resp.status,
+      statusText: resp.statusText,
+      headers:    respHeaders,
+    })
   },
 }</code></pre>
             </details>

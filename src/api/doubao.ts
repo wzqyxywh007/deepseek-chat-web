@@ -36,6 +36,17 @@ export async function streamDoubaoChat(options: StreamChatOptions & { proxyUrl?:
     return
   }
 
+  // 如果代理返回 HTML（服务器把请求路由到了 Web 控制台），给出清晰错误
+  const contentType = response.headers.get('content-type') ?? ''
+  if (contentType.includes('text/html')) {
+    onError(new Error(
+      '豆包 API 返回了网页内容而非数据。请检查：\n' +
+      '① 代理地址是否填写正确（应为 Cloudflare Worker 地址，非 ark.volcengine.com）\n' +
+      '② Worker 代码是否已更新到最新版本',
+    ))
+    return
+  }
+
   if (!response.ok) {
     let errMsg = `HTTP ${response.status}`
     try {
@@ -111,6 +122,13 @@ export async function generateDoubaoImage(options: DoubaoImageOptions): Promise<
     },
     body: JSON.stringify({ model, prompt, size, n }),
   })
+
+  const imgContentType = response.headers.get('content-type') ?? ''
+  if (imgContentType.includes('text/html')) {
+    throw new Error(
+      '豆包 API 返回了网页内容。请检查代理地址和 Worker 代码是否正确。',
+    )
+  }
 
   if (!response.ok) {
     let errMsg = `HTTP ${response.status}`
