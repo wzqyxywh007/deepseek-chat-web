@@ -1,6 +1,26 @@
 <template>
   <div class="chat-input-wrap">
     <div class="chat-input" :class="{ 'chat-input--disabled': !hasApiKey }">
+
+      <!-- 附件预览区 -->
+      <div v-if="pendingFiles.length" class="attachment-bar">
+        <div
+          v-for="(f, i) in pendingFiles"
+          :key="i"
+          class="att-preview"
+          :class="{ 'att-preview--image': f.fileType === 'image' }"
+        >
+          <img v-if="f.fileType === 'image' && f.dataUrl" :src="f.dataUrl" class="att-preview__thumb" />
+          <span v-else class="att-preview__icon">{{ fileIcon(f) }}</span>
+          <div class="att-preview__info">
+            <span class="att-preview__name">{{ f.name }}</span>
+            <span class="att-preview__size">{{ formatFileSize(f.size) }}</span>
+          </div>
+          <button class="att-preview__remove" @click="removeFile(i)" title="移除">✕</button>
+        </div>
+        <div v-if="parsing" class="att-loading">解析中…</div>
+      </div>
+
       <textarea
         ref="textareaRef"
         v-model="inputText"
@@ -14,8 +34,30 @@
         @compositionstart="composing = true"
         @compositionend="composing = false"
       />
+
       <div class="chat-input__footer">
+        <!-- 上传按钮 -->
+        <input
+          ref="fileInputRef"
+          type="file"
+          class="file-input-hidden"
+          :accept="ACCEPTED_FILE_TYPES"
+          multiple
+          @change="handleFileChange"
+        />
+        <button
+          class="upload-btn"
+          :disabled="!hasApiKey"
+          @click="fileInputRef?.click()"
+          title="上传文件或图片（Excel/Word/PDF/图片等）"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+          </svg>
+        </button>
+
         <span class="chat-input__hint">Enter 发送，Shift+Enter 换行</span>
+
         <button
           v-if="isStreaming"
           class="send-btn send-btn--stop"
@@ -27,7 +69,7 @@
         <button
           v-else
           class="send-btn"
-          :disabled="!hasApiKey || !inputText.trim()"
+          :disabled="!hasApiKey || (!inputText.trim() && !pendingFiles.length)"
           @click="handleSend"
           title="发送"
         >
@@ -46,6 +88,13 @@
 import { ref, computed } from 'vue'
 import { useChatStore } from '@/stores/chat'
 import { useSettingsStore } from '@/stores/settings'
+import {
+  parseFile,
+  ACCEPTED_FILE_TYPES,
+  formatFileSize,
+  type ParsedFile,
+} from '@/utils/fileParser'
+import { toast } from '@/utils/toast'
 
 const emit = defineEmits<{ 'open-settings': [] }>()
 
@@ -55,9 +104,47 @@ const settingsStore = useSettingsStore()
 const inputText = ref('')
 const composing = ref(false)
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
+const fileInputRef = ref<HTMLInputElement | null>(null)
+const pendingFiles = ref<ParsedFile[]>([])
+const parsing = ref(false)
 
 const hasApiKey = computed(() => settingsStore.hasApiKey)
 const isStreaming = computed(() => chatStore.isStreaming)
+
+function fileIcon(f: ParsedFile): string {
+  const ext = f.name.split('.').pop()?.toLowerCase() ?? ''
+  if (['pdf'].includes(ext)) return '📄'
+  if (['doc', 'docx'].includes(ext)) return '📝'
+  if (['xlsx', 'xls', 'csv'].includes(ext)) return '📊'
+  if (['txt', 'md', 'json'].includes(ext)) return '📋'
+  return '📎'
+}
+
+function removeFile(index: number) {
+  pendingFiles.value.splice(index, 1)
+  if (fileInputRef.value) fileInputRef.value.value = ''
+}
+
+async function handleFileChange(e: Event) {
+  const input = e.target as HTMLInputElement
+  const files = Array.from(input.files ?? [])
+  if (!files.length) return
+
+  parsing.value = true
+  for (const file of files) {
+    try {
+      const parsed = await parseFile(file)
+      pendingFiles.value.push(parsed)
+      if (parsed.truncated) {
+        toast.warning(`「${file.name}」内容过长，已截取前 200K 字符发送`)
+      }
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : `文件「${file.name}」解析失败`)
+    }
+  }
+  parsing.value = false
+  if (fileInputRef.value) fileInputRef.value.value = ''
+}
 
 function autoResize() {
   const el = textareaRef.value
@@ -71,9 +158,12 @@ function autoResize() {
 function handleSend() {
   if (composing.value) return
   const text = inputText.value.trim()
-  if (!text || !hasApiKey.value || isStreaming.value) return
-  chatStore.sendMessage(text)
+  const files = [...pendingFiles.value]
+  if ((!text && !files.length) || !hasApiKey.value || isStreaming.value) return
+
+  chatStore.sendMessage(text, files)
   inputText.value = ''
+  pendingFiles.value = []
   if (textareaRef.value) textareaRef.value.style.height = 'auto'
 }
 
@@ -106,6 +196,79 @@ defineExpose({ setInput: (text: string) => { inputText.value = text } })
   opacity: 0.6;
 }
 
+/* 附件预览栏 */
+.attachment-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 14px 0;
+}
+
+.att-preview {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: var(--radius-md);
+  background: var(--bg-hover);
+  border: 1px solid var(--border-color);
+  min-width: 0;
+  max-width: 200px;
+}
+
+.att-preview__thumb {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.att-preview__icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.att-preview__info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.att-preview__name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.att-preview__size {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.att-preview__remove {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 2px 4px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.att-preview__remove:hover {
+  background: var(--danger);
+  color: #fff;
+}
+
+.att-loading {
+  font-size: 12px;
+  color: var(--text-muted);
+  align-self: center;
+}
+
 .chat-input__textarea {
   width: 100%;
   resize: none;
@@ -120,13 +283,37 @@ defineExpose({ setInput: (text: string) => { inputText.value = text } })
 .chat-input__footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 6px 10px 8px 16px;
+  gap: 6px;
+  padding: 6px 10px 8px 10px;
+}
+
+.file-input-hidden {
+  display: none;
+}
+
+.upload-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: color var(--transition), background var(--transition);
+}
+.upload-btn:not(:disabled):hover {
+  color: var(--accent);
+  background: var(--bg-hover);
+}
+.upload-btn:disabled {
+  opacity: 0.4;
 }
 
 .chat-input__hint {
   font-size: 12px;
   color: var(--text-placeholder);
+  flex: 1;
 }
 
 .send-btn {

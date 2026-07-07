@@ -5,6 +5,8 @@ import { storageGet, storageSet, STORAGE_KEYS } from '@/utils/storage'
 import { streamChat } from '@/api/deepseek'
 import { useSettingsStore } from './settings'
 import { toast, translateApiError } from '@/utils/toast'
+import type { ParsedFile } from '@/utils/fileParser'
+import { buildApiContent, toAttachmentMeta } from '@/utils/fileParser'
 
 function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2)
@@ -97,22 +99,25 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  async function sendMessage(userContent: string) {
+  async function sendMessage(userContent: string, attachments: ParsedFile[] = []) {
     const session = currentSession.value
     if (!session) return
 
     abortStream()
 
+    const trimmed = userContent.trim()
+
     const userMsg: Message = {
       id: generateId(),
       role: 'user',
-      content: userContent.trim(),
+      content: trimmed,
+      attachments: attachments.map(toAttachmentMeta),
       createdAt: Date.now(),
     }
     session.messages.push(userMsg)
 
     if (session.title === '新对话' && session.messages.length === 1) {
-      session.title = userContent.slice(0, 20)
+      session.title = trimmed.slice(0, 20)
     }
 
     const aiMsg: Message = {
@@ -129,10 +134,14 @@ export const useChatStore = defineStore('chat', () => {
     // push 之后从响应式数组取回 Proxy 版本，确保回调中的赋值能触发 Vue 更新
     const reactiveAiMsg = session.messages[session.messages.length - 1]
 
+    // 历史消息（文本），当前消息用完整内容（含文件/图片）
+    const pastHistory: ChatMessage[] = session.messages
+      .filter(m => !m.isStreaming && m.id !== reactiveAiMsg.id && m.id !== userMsg.id)
+      .map(m => ({ role: m.role, content: m.content }))
+
+    const currentApiContent = buildApiContent(trimmed, attachments)
     const history = buildApiMessages(
-      session.messages
-        .filter(m => !m.isStreaming && m.id !== reactiveAiMsg.id)
-        .map(m => ({ role: m.role, content: m.content })),
+      [...pastHistory, { role: 'user' as const, content: currentApiContent }],
       settingsStore.systemPrompt,
     )
 

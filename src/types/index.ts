@@ -2,6 +2,18 @@ export type ModelId = 'deepseek-v4-pro' | 'deepseek-v4-flash'
 export type ThemeMode = 'light' | 'dark' | 'system'
 export type ReasoningEffort = 'high' | 'medium' | 'low'
 
+export interface MessageAttachment {
+  name: string
+  fileType: 'file' | 'image'
+  mimeType: string
+  previewUrl?: string  // 图片缩略图，仅用于展示
+  truncated: boolean
+}
+
+export type ContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'image_url'; image_url: { url: string } }
+
 export interface Message {
   id: string
   role: 'user' | 'assistant'
@@ -9,6 +21,7 @@ export interface Message {
   reasoningContent?: string
   isStreaming?: boolean
   isError?: boolean
+  attachments?: MessageAttachment[]
   createdAt: number
 }
 
@@ -31,7 +44,7 @@ export interface Settings {
 
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant'
-  content: string
+  content: string | ContentPart[]
 }
 
 export const MODEL_OPTIONS: { value: ModelId; label: string; description: string }[] = [

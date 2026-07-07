@@ -12,13 +12,28 @@
         :is-streaming="!!message.isStreaming"
       />
 
+      <!-- 用户附件 -->
+      <div v-if="message.role === 'user' && message.attachments?.length" class="message__attachments">
+        <div
+          v-for="att in message.attachments"
+          :key="att.name"
+          class="att-chip"
+          :class="{ 'att-chip--image': att.fileType === 'image' }"
+        >
+          <img v-if="att.fileType === 'image' && att.previewUrl" :src="att.previewUrl" class="att-chip__img" />
+          <span v-else class="att-chip__icon">{{ attIcon(att.mimeType) }}</span>
+          <span class="att-chip__name">{{ att.name }}</span>
+          <span v-if="att.truncated" class="att-chip__warn" title="内容过长，已截取">⚠️</span>
+        </div>
+      </div>
+
       <!-- 消息内容 -->
       <div
         class="message__bubble"
         :class="{ 'message__bubble--streaming': message.isStreaming && !message.content }"
       >
         <template v-if="message.role === 'user'">
-          <p class="message__text">{{ message.content }}</p>
+          <p v-if="message.content" class="message__text">{{ message.content }}</p>
         </template>
         <template v-else>
           <div
@@ -75,6 +90,13 @@ const props = defineProps<{
   message: Message
   isLast?: boolean
 }>()
+
+function attIcon(mimeType: string): string {
+  if (mimeType.includes('pdf')) return '📄'
+  if (mimeType.includes('word') || mimeType.includes('docx')) return '📝'
+  if (mimeType.includes('sheet') || mimeType.includes('excel') || mimeType.includes('csv')) return '📊'
+  return '📎'
+}
 
 const chatStore = useChatStore()
 const mdContainer = ref<HTMLElement | null>(null)
@@ -201,6 +223,56 @@ function handleRegenerate() {
 @keyframes blink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
+}
+
+/* 附件展示 */
+.message__attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+  justify-content: flex-end;
+}
+
+.att-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: var(--radius-md);
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  font-size: 12px;
+  color: var(--bubble-user-text);
+  max-width: 200px;
+}
+
+.att-chip--image {
+  padding: 4px 8px;
+}
+
+.att-chip__img {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.att-chip__icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.att-chip__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.att-chip__warn {
+  font-size: 12px;
+  flex-shrink: 0;
 }
 
 /* 操作栏 */
