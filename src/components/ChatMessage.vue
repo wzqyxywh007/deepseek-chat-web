@@ -36,7 +36,7 @@
           <p v-if="message.content" class="message__text">{{ message.content }}</p>
         </template>
         <template v-else>
-          <!-- 豆包图片生成结果 -->
+          <!-- 图片生成结果 -->
           <div v-if="message.generatedImages?.length" class="generated-images">
             <img
               v-for="url in message.generatedImages"
@@ -45,6 +45,7 @@
               class="generated-image"
               alt="AI 生成图片"
               loading="lazy"
+              @click="openLightbox(url)"
             />
           </div>
           <!-- 文字内容（流式 loading 动画 / Markdown） -->
@@ -98,6 +99,7 @@ import type { Message } from '@/types'
 import ReasoningBlock from './ReasoningBlock.vue'
 import { renderMarkdown, bindCopyButtons } from '@/utils/markdown'
 import { useChatStore } from '@/stores/chat'
+import { useLightbox } from '@/utils/lightbox'
 
 const props = defineProps<{
   message: Message
@@ -112,8 +114,21 @@ function attIcon(mimeType: string): string {
 }
 
 const chatStore = useChatStore()
+const lb = useLightbox()
 const mdContainer = ref<HTMLElement | null>(null)
 const copied = ref(false)
+
+function openLightbox(clickedUrl: string) {
+  // 收集当前 session 所有消息中的全部生成图片
+  const allImages: string[] = []
+  for (const msg of chatStore.currentSession?.messages ?? []) {
+    for (const url of msg.generatedImages ?? []) {
+      allImages.push(url)
+    }
+  }
+  const idx = allImages.indexOf(clickedUrl)
+  lb.open(allImages, idx >= 0 ? idx : 0)
+}
 
 const renderedContent = computed(() => {
   if (!props.message.content && props.message.isStreaming) return ''

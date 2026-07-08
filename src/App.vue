@@ -40,6 +40,9 @@
 
     <!-- 全局 Toast 通知 -->
     <ToastContainer />
+
+    <!-- 图片灯箱预览 -->
+    <ImageLightbox />
   </div>
 </template>
 
@@ -50,6 +53,7 @@ import MessageList from '@/components/MessageList.vue'
 import ChatInput from '@/components/ChatInput.vue'
 import SettingsModal from '@/components/SettingsModal.vue'
 import ToastContainer from '@/components/ToastContainer.vue'
+import ImageLightbox from '@/components/ImageLightbox.vue'
 import { useChatStore } from '@/stores/chat'
 import { useSettingsStore } from '@/stores/settings'
 
