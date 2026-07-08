@@ -24,6 +24,30 @@ body {
   transition: background-color var(--transition), color var(--transition);
 }
 
+/* Provider 主题色平滑过渡 */
+:root {
+  transition:
+    --accent 0.3s ease,
+    --accent-hover 0.3s ease,
+    --accent-light 0.3s ease,
+    --bubble-user-bg 0.3s ease,
+    --bg-active 0.3s ease;
+}
+
+/* 所有使用 accent 的元素统一过渡 */
+a,
+button,
+input,
+textarea,
+[class*="accent"],
+[class*="bubble"] {
+  transition:
+    color 0.3s ease,
+    background-color 0.3s ease,
+    border-color 0.3s ease,
+    background 0.3s ease;
+}
+
 /* 滚动条 */
 ::-webkit-scrollbar {
   width: 6px;

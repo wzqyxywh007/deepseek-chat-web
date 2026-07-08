@@ -2,20 +2,32 @@
   <div ref="container" class="message-list">
     <!-- 欢迎引导 -->
     <div v-if="!messages.length" class="welcome">
-      <div class="welcome__logo" :class="{ 'welcome__logo--doubao': isDoubao }">
+      <div class="welcome__logo">
         <!-- DeepSeek Logo -->
-        <svg v-if="!isDoubao" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" class="welcome__img">
+        <svg v-if="provider === 'deepseek'" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" class="welcome__img">
           <circle cx="32" cy="32" r="32" fill="#1a6bf7"/>
           <text x="32" y="43" text-anchor="middle" font-family="sans-serif" font-size="28" font-weight="bold" fill="white">D</text>
         </svg>
-        <!-- 豆包 Logo（图片模型用画笔图标，对话模型用豆包标识） -->
-        <svg v-else-if="isImageModel" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" class="welcome__img">
+        <!-- 豆包图片模型 -->
+        <svg v-else-if="isDoubao && isImageModel" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" class="welcome__img">
           <circle cx="32" cy="32" r="32" fill="#7c3aed"/>
           <text x="32" y="43" text-anchor="middle" font-family="sans-serif" font-size="28" fill="white">🎨</text>
         </svg>
-        <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" class="welcome__img">
+        <!-- 豆包对话模型 -->
+        <svg v-else-if="isDoubao" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" class="welcome__img">
           <circle cx="32" cy="32" r="32" fill="#10b981"/>
           <text x="32" y="43" text-anchor="middle" font-family="sans-serif" font-size="28" font-weight="bold" fill="white">豆</text>
+        </svg>
+        <!-- NovelAI Logo -->
+        <svg v-else-if="isNovelAI" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" class="welcome__img">
+          <defs>
+            <linearGradient id="nai-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#db2777"/>
+              <stop offset="100%" style="stop-color:#9333ea"/>
+            </linearGradient>
+          </defs>
+          <circle cx="32" cy="32" r="32" fill="url(#nai-grad)"/>
+          <text x="32" y="43" text-anchor="middle" font-family="sans-serif" font-size="26" fill="white">✦</text>
         </svg>
       </div>
       <h2 class="welcome__title">{{ welcomeTitle }}</h2>
@@ -25,7 +37,10 @@
           v-for="s in suggestions"
           :key="s"
           class="suggestion-btn"
-          :class="{ 'suggestion-btn--image': isImageModel }"
+          :class="{
+            'suggestion-btn--image': isDoubao && isImageModel,
+            'suggestion-btn--novelai': isNovelAI,
+          }"
           @click="emit('suggest', s)"
         >
           {{ s }}
@@ -62,21 +77,33 @@ const container = ref<HTMLElement | null>(null)
 const bottomAnchor = ref<HTMLElement | null>(null)
 
 const currentConfig = computed(() => MODEL_CONFIGS[settingsStore.model])
-const isDoubao = computed(() => currentConfig.value?.provider === 'doubao')
+const provider = computed(() => currentConfig.value?.provider ?? 'deepseek')
+const isDoubao = computed(() => provider.value === 'doubao')
+const isNovelAI = computed(() => provider.value === 'novelai')
 const isImageModel = computed(() => currentConfig.value?.isImageModel === true)
 
 const welcomeTitle = computed(() => {
+  if (isNovelAI.value) return `你好，我是 NovelAI`
   if (isDoubao.value) return `你好，我是${currentConfig.value?.label ?? '豆包'}`
   return `你好，我是 DeepSeek`
 })
 
 const welcomeSubtitle = computed(() => {
+  if (isNovelAI.value) return '描述你的想象，我来创作专属二次元图片'
   if (isImageModel.value) return '描述你的想象，我来帮你生成一张图片'
   if (isDoubao.value) return '豆包 AI 助手，帮你思考、分析、写作'
   return '你的 AI 助手，可以帮你思考、分析、写作'
 })
 
 const suggestions = computed(() => {
+  if (isNovelAI.value) {
+    return [
+      '一个红发精灵少女，站在月光下的森林中',
+      '穿着华丽战甲的银发骑士，史诗风格',
+      '温泉中的兽耳女孩，温柔光线',
+      '赛博朋克风格的猫娘，霓虹背景',
+    ]
+  }
   if (isImageModel.value) {
     return [
       '一只在雪地里奔跑的橘猫，写实风格',
@@ -195,6 +222,12 @@ watch(container, (el) => {
   background: rgba(124, 58, 237, 0.06);
   border-color: #7c3aed;
   color: #7c3aed;
+}
+
+.suggestion-btn--novelai:hover {
+  background: rgba(219, 39, 119, 0.06);
+  border-color: #db2777;
+  color: #db2777;
 }
 
 .message-list__inner {

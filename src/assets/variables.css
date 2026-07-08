@@ -64,6 +64,37 @@
   --content-max-width: 800px;
 }
 
+/* ─── Provider 主题色覆盖（浅色模式） ──────────────────────────────────────── */
+
+[data-provider='doubao'] {
+  --accent:          #10b981;
+  --accent-hover:    #059669;
+  --accent-light:    rgba(16, 185, 129, 0.09);
+  --bubble-user-bg:  #10b981;
+  --bg-active:       rgba(16, 185, 129, 0.13);
+  --reasoning-border:#10b981;
+}
+
+[data-provider='doubao-image'] {
+  --accent:          #7c3aed;
+  --accent-hover:    #6d28d9;
+  --accent-light:    rgba(124, 58, 237, 0.09);
+  --bubble-user-bg:  #7c3aed;
+  --bg-active:       rgba(124, 58, 237, 0.13);
+  --reasoning-border:#7c3aed;
+}
+
+[data-provider='novelai'] {
+  --accent:          #db2777;
+  --accent-hover:    #be185d;
+  --accent-light:    rgba(219, 39, 119, 0.09);
+  --bubble-user-bg:  #db2777;
+  --bg-active:       rgba(219, 39, 119, 0.13);
+  --reasoning-border:#db2777;
+}
+
+/* ─── 暗色模式 ────────────────────────────────────────────────────────────── */
+
 [data-theme='dark'] {
   --bg-primary: #1a1a1a;
   --bg-secondary: #242424;
@@ -104,4 +135,33 @@
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+/* ─── Provider 主题色覆盖（暗色模式）────────────────────────────────────────── */
+
+[data-theme='dark'][data-provider='doubao'] {
+  --accent:          #34d399;
+  --accent-hover:    #10b981;
+  --accent-light:    rgba(52, 211, 153, 0.14);
+  --bubble-user-bg:  #059669;
+  --bg-active:       rgba(52, 211, 153, 0.14);
+  --reasoning-border:#34d399;
+}
+
+[data-theme='dark'][data-provider='doubao-image'] {
+  --accent:          #a78bfa;
+  --accent-hover:    #8b5cf6;
+  --accent-light:    rgba(167, 139, 250, 0.15);
+  --bubble-user-bg:  #7c3aed;
+  --bg-active:       rgba(167, 139, 250, 0.15);
+  --reasoning-border:#a78bfa;
+}
+
+[data-theme='dark'][data-provider='novelai'] {
+  --accent:          #f472b6;
+  --accent-hover:    #ec4899;
+  --accent-light:    rgba(244, 114, 182, 0.15);
+  --bubble-user-bg:  #be185d;
+  --bg-active:       rgba(244, 114, 182, 0.15);
+  --reasoning-border:#f472b6;
 }

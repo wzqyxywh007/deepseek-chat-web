@@ -56,6 +56,7 @@ import ToastContainer from '@/components/ToastContainer.vue'
 import ImageLightbox from '@/components/ImageLightbox.vue'
 import { useChatStore } from '@/stores/chat'
 import { useSettingsStore } from '@/stores/settings'
+import { getProvider, MODEL_CONFIGS } from '@/types'
 
 const chatStore = useChatStore()
 const settingsStore = useSettingsStore()
@@ -78,7 +79,18 @@ function applyTheme(theme: string) {
   }
 }
 
+// Provider 主题色
+function applyProvider(modelId: string) {
+  const provider = getProvider(modelId as Parameters<typeof getProvider>[0])
+  const isImage = MODEL_CONFIGS[modelId as keyof typeof MODEL_CONFIGS]?.isImageModel
+  let token = 'deepseek'
+  if (provider === 'novelai') token = 'novelai'
+  else if (provider === 'doubao') token = isImage ? 'doubao-image' : 'doubao'
+  document.documentElement.setAttribute('data-provider', token)
+}
+
 watch(() => settingsStore.theme, applyTheme, { immediate: true })
+watch(() => settingsStore.model, applyProvider, { immediate: true })
 
 const mq = window.matchMedia('(prefers-color-scheme: dark)')
 mq.addEventListener('change', () => {
