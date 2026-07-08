@@ -121,7 +121,7 @@ function extractImagesFromZip(buffer: ArrayBuffer): string[] {
 }
 
 const CONCURRENT_LOCK_MSG = 'Concurrent generation is locked'
-const RETRY_DELAY_MS = 3000
+const RETRY_DELAY_MS = 1500
 
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
