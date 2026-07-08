@@ -6,7 +6,7 @@ export interface NovelAIImageOptions {
   prompt: string
   apiKey: string
   model: string
-  /** 负面提示词，默认使用 NovelAI 推荐的通用负面词 */
+  /** 负面提示词 */
   negativePrompt?: string
   /** 图片宽度，默认 832 */
   width?: number
@@ -18,15 +18,89 @@ export interface NovelAIImageOptions {
   seed?: number
   /** 采样器，默认 k_euler_ancestral */
   sampler?: string
-  /** 步数，默认 28 */
-  steps?: number
-  /** CFG 引导强度，默认 5.0 */
-  scale?: number
   proxyUrl?: string
 }
 
-const DEFAULT_NEGATIVE_PROMPT =
-  'lowres, {bad}, error, fewer, extra, missing, worst quality, jpeg artifacts, bad quality, watermark, unfinished, displeasing, chromatic aberration, signature, extra digits, artistic error, username, scan, [abstract]'
+// V3 模型默认负面词
+const DEFAULT_NEGATIVE_V3 =
+  'lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry'
+
+// V4/V4.5 模型默认负面词
+const DEFAULT_NEGATIVE_V4 =
+  'very displeasing, lowres, bad, error, fewer, extra, missing, worst quality, jpeg artifacts, bad quality, watermark, unfinished, displeasing, chromatic aberration, signature, extra digits, artistic error, username, scan, abstract'
+
+/** 判断是否为 V4/V4.5 模型（需要 v4_prompt 结构） */
+function isV4Model(model: string): boolean {
+  return model.includes('nai-diffusion-4')
+}
+
+/** 构建 V4/V4.5 的 caption 对象 */
+function buildV4Caption(text: string, isTags = false) {
+  return {
+    base_caption: text,
+    char_captions: [] as unknown[],
+    base_caption_dropout: 0,
+    is_nsfw: false,
+    is_furry: false,
+    is_photo: false,
+    is_unsplash: false,
+    is_tags: isTags,
+    is_gel: isTags,
+  }
+}
+
+/** 构建请求 parameters 对象，V3 和 V4 格式不同 */
+function buildParameters(
+  model: string,
+  prompt: string,
+  negativePrompt: string,
+  width: number,
+  height: number,
+  nSamples: number,
+  seed: number,
+  sampler: string,
+) {
+  const common = {
+    width,
+    height,
+    n_samples: nSamples,
+    seed,
+    sampler,
+    cfg_rescale: 0.0,
+    dynamic_thresholding: false,
+    sm: false,
+    sm_dyn: false,
+  }
+
+  if (isV4Model(model)) {
+    // V4/V4.5：使用 v4_prompt / v4_negative_prompt 结构，推荐参数有所不同
+    return {
+      ...common,
+      steps: 23,
+      scale: 5.0,
+      noise_schedule: 'karras',
+      v4_prompt: {
+        caption: buildV4Caption(prompt, true),
+        use_coords: false,
+        use_order: true,
+      },
+      v4_negative_prompt: {
+        caption: buildV4Caption(negativePrompt, false),
+        use_coords: false,
+        use_order: true,
+      },
+    }
+  }
+
+  // V3：使用简单的 negative_prompt 字符串
+  return {
+    ...common,
+    steps: 28,
+    scale: 5.0,
+    noise_schedule: 'native',
+    negative_prompt: negativePrompt,
+  }
+}
 
 /**
  * 解析 NovelAI 返回的 ZIP 文件，提取所有 PNG 并转为 blob URL 数组
@@ -37,40 +111,34 @@ function extractImagesFromZip(buffer: ArrayBuffer): string[] {
 
   const urls: string[] = []
   for (const [name, data] of Object.entries(files)) {
-    if (name.endsWith('.png') || name.endsWith('.jpg') || name.endsWith('.webp')) {
-      const mimeType = name.endsWith('.png') ? 'image/png' : name.endsWith('.jpg') ? 'image/jpeg' : 'image/webp'
-      const blob = new Blob([data], { type: mimeType })
-      urls.push(URL.createObjectURL(blob))
-    }
-  }
-
-  // 如果没有找到图片文件，尝试将所有文件都当作 PNG 处理
-  if (urls.length === 0 && Object.keys(files).length > 0) {
-    for (const data of Object.values(files)) {
-      const blob = new Blob([data], { type: 'image/png' })
-      urls.push(URL.createObjectURL(blob))
-    }
+    const lower = name.toLowerCase()
+    const mimeType = lower.endsWith('.jpg') || lower.endsWith('.jpeg')
+      ? 'image/jpeg'
+      : lower.endsWith('.webp')
+        ? 'image/webp'
+        : 'image/png'
+    const blob = new Blob([data], { type: mimeType })
+    urls.push(URL.createObjectURL(blob))
   }
 
   return urls
 }
 
-/** NovelAI 图片生成（返回 blob URL 数组，用完后应调用 URL.revokeObjectURL 释放） */
+/** NovelAI 图片生成（返回 blob URL 数组，刷新页面后失效） */
 export async function generateNovelAIImage(options: NovelAIImageOptions): Promise<string[]> {
   const {
     prompt,
     apiKey,
     model,
-    negativePrompt = DEFAULT_NEGATIVE_PROMPT,
     width = 832,
     height = 1216,
     nSamples = 1,
     seed = 0,
     sampler = 'k_euler_ancestral',
-    steps = 28,
-    scale = 5.0,
     proxyUrl,
   } = options
+
+  const negativePrompt = options.negativePrompt ?? (isV4Model(model) ? DEFAULT_NEGATIVE_V4 : DEFAULT_NEGATIVE_V3)
 
   const base = proxyUrl ? proxyUrl.replace(/\/$/, '') : NOVELAI_IMAGE_BASE
   const url = `${base}/ai/generate-image`
@@ -79,19 +147,7 @@ export async function generateNovelAIImage(options: NovelAIImageOptions): Promis
     input: prompt,
     model,
     action: 'generate',
-    parameters: {
-      width,
-      height,
-      n_samples: nSamples,
-      seed,
-      sampler,
-      steps,
-      scale,
-      negative_prompt: negativePrompt,
-      sm: false,
-      sm_dyn: false,
-      noise_schedule: 'native',
-    },
+    parameters: buildParameters(model, prompt, negativePrompt, width, height, nSamples, seed, sampler),
   }
 
   let response: Response
@@ -106,29 +162,24 @@ export async function generateNovelAIImage(options: NovelAIImageOptions): Promis
       body: JSON.stringify(body),
     })
   } catch (e) {
-    throw new Error(`网络请求失败：${(e as Error).message}`)
+    throw new Error(`网络请求失败：${(e as Error).message}。如果是跨域问题，请填写 NovelAI 代理地址。`)
   }
 
   const contentType = response.headers.get('content-type') ?? ''
 
   if (contentType.includes('text/html')) {
     throw new Error(
-      'NovelAI API 返回了网页内容，可能是跨域问题。请配置代理地址后重试。',
+      'NovelAI API 返回了网页内容，可能是跨域问题。请在设置中填写 NovelAI 代理地址后重试。',
     )
   }
 
   if (!response.ok) {
     let errMsg = `HTTP ${response.status}`
     try {
-      if (contentType.includes('application/json')) {
-        const errBody = await response.json()
-        errMsg = errBody?.message ?? errBody?.error ?? errMsg
-      } else {
-        const text = await response.text()
-        if (text) errMsg = `${errMsg}：${text.slice(0, 200)}`
-      }
+      const errBody = await response.json()
+      errMsg = errBody?.message ?? errBody?.error ?? errMsg
     } catch { /* ignore */ }
-    throw new Error(errMsg)
+    throw new Error(`NovelAI 错误：${errMsg}`)
   }
 
   const buffer = await response.arrayBuffer()

@@ -8,6 +8,8 @@ export type ModelId =
   | 'doubao-pro-32k'
   | 'doubao-lite-32k'
   | 'doubao-image'
+  | 'novelai-image-v45'
+  | 'novelai-image-v45-curated'
   | 'novelai-image-v4'
   | 'novelai-image-v4-curated'
   | 'novelai-image-v3'
@@ -54,10 +56,24 @@ export const MODEL_CONFIGS: Record<ModelId, ModelConfig> = {
     apiModelName: 'doubao-seedream-5-0-260128',
     isImageModel: true,
   },
+  'novelai-image-v45': {
+    provider: 'novelai',
+    label: 'NAI V4.5 Full',
+    description: 'NovelAI Diffusion V4.5 最新旗舰版，画质最强',
+    apiModelName: 'nai-diffusion-4-5-full',
+    isImageModel: true,
+  },
+  'novelai-image-v45-curated': {
+    provider: 'novelai',
+    label: 'NAI V4.5 Curated',
+    description: 'NovelAI Diffusion V4.5 精选版，内容更安全',
+    apiModelName: 'nai-diffusion-4-5-curated',
+    isImageModel: true,
+  },
   'novelai-image-v4': {
     provider: 'novelai',
     label: 'NAI V4 Full',
-    description: 'NovelAI Diffusion V4 旗舰版，二次元风格最强',
+    description: 'NovelAI Diffusion V4 旗舰版，二次元风格强',
     apiModelName: 'nai-diffusion-4-full',
     isImageModel: true,
   },
@@ -94,6 +110,8 @@ export const MODEL_OPTIONS: { value: ModelId; label: string; description: string
   { value: 'doubao-pro-32k', ...MODEL_CONFIGS['doubao-pro-32k'] },
   { value: 'doubao-lite-32k', ...MODEL_CONFIGS['doubao-lite-32k'] },
   { value: 'doubao-image', ...MODEL_CONFIGS['doubao-image'] },
+  { value: 'novelai-image-v45', ...MODEL_CONFIGS['novelai-image-v45'] },
+  { value: 'novelai-image-v45-curated', ...MODEL_CONFIGS['novelai-image-v45-curated'] },
   { value: 'novelai-image-v4', ...MODEL_CONFIGS['novelai-image-v4'] },
   { value: 'novelai-image-v4-curated', ...MODEL_CONFIGS['novelai-image-v4-curated'] },
   { value: 'novelai-image-v3', ...MODEL_CONFIGS['novelai-image-v3'] },
