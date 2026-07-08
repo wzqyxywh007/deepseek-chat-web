@@ -120,7 +120,55 @@ function extractImagesFromZip(buffer: ArrayBuffer): string[] {
   return urls
 }
 
-/** NovelAI 图片生成（返回 blob URL 数组，刷新页面后失效） */
+const CONCURRENT_LOCK_MSG = 'Concurrent generation is locked'
+const RETRY_DELAY_MS = 3000
+
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+/** 执行单次 NovelAI 图片生成请求，返回 { urls } 或 { retry: true }（并发锁）或抛出错误 */
+async function doRequest(
+  url: string,
+  headers: Record<string, string>,
+  body: string,
+): Promise<{ urls: string[] } | { retry: true }> {
+  let response: Response
+  try {
+    response = await fetch(url, { method: 'POST', headers, body })
+  } catch (e) {
+    throw new Error(`网络请求失败：${(e as Error).message}。如果是跨域问题，请填写 NovelAI 代理地址。`)
+  }
+
+  const contentType = response.headers.get('content-type') ?? ''
+
+  if (contentType.includes('text/html')) {
+    throw new Error('NovelAI API 返回了网页内容，可能是跨域问题。请在设置中填写 NovelAI 代理地址后重试。')
+  }
+
+  if (!response.ok) {
+    let errMsg = `HTTP ${response.status}`
+    try {
+      const errBody = await response.json()
+      const msg: string = errBody?.message ?? errBody?.error ?? ''
+      // 并发生成锁定 → 静默重试
+      if (msg === CONCURRENT_LOCK_MSG || msg.includes('Concurrent')) {
+        return { retry: true }
+      }
+      errMsg = msg || errMsg
+    } catch { /* ignore */ }
+    throw new Error(`NovelAI 错误：${errMsg}`)
+  }
+
+  const buffer = await response.arrayBuffer()
+  const urls = extractImagesFromZip(buffer)
+  if (urls.length === 0) {
+    throw new Error('图片生成失败，响应中未找到图片数据')
+  }
+  return { urls }
+}
+
+/** NovelAI 图片生成（返回 blob URL 数组，刷新页面后失效）。并发锁时自动静默重试。 */
 export async function generateNovelAIImage(options: NovelAIImageOptions): Promise<string[]> {
   const {
     prompt,
@@ -135,55 +183,24 @@ export async function generateNovelAIImage(options: NovelAIImageOptions): Promis
   } = options
 
   const negativePrompt = options.negativePrompt ?? DEFAULT_NEGATIVE_PROMPT
-
   const base = proxyUrl ? proxyUrl.replace(/\/$/, '') : NOVELAI_IMAGE_BASE
   const url = `${base}/ai/generate-image`
-
-  const body = {
+  const headers = {
+    Authorization: `Bearer ${apiKey}`,
+    'Content-Type': 'application/json',
+    Accept: 'application/zip, */*',
+  }
+  const body = JSON.stringify({
     input: prompt,
     model,
     action: 'generate',
     parameters: buildParameters(model, prompt, negativePrompt, width, height, nSamples, seed, sampler),
+  })
+
+  while (true) {
+    const result = await doRequest(url, headers, body)
+    if ('urls' in result) return result.urls
+    // 并发锁：等 3 秒后静默重试
+    await sleep(RETRY_DELAY_MS)
   }
-
-  let response: Response
-  try {
-    response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        Accept: 'application/zip, */*',
-      },
-      body: JSON.stringify(body),
-    })
-  } catch (e) {
-    throw new Error(`网络请求失败：${(e as Error).message}。如果是跨域问题，请填写 NovelAI 代理地址。`)
-  }
-
-  const contentType = response.headers.get('content-type') ?? ''
-
-  if (contentType.includes('text/html')) {
-    throw new Error(
-      'NovelAI API 返回了网页内容，可能是跨域问题。请在设置中填写 NovelAI 代理地址后重试。',
-    )
-  }
-
-  if (!response.ok) {
-    let errMsg = `HTTP ${response.status}`
-    try {
-      const errBody = await response.json()
-      errMsg = errBody?.message ?? errBody?.error ?? errMsg
-    } catch { /* ignore */ }
-    throw new Error(`NovelAI 错误：${errMsg}`)
-  }
-
-  const buffer = await response.arrayBuffer()
-  const urls = extractImagesFromZip(buffer)
-
-  if (urls.length === 0) {
-    throw new Error('图片生成失败，响应中未找到图片数据')
-  }
-
-  return urls
 }
