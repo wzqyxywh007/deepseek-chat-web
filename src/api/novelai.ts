@@ -21,13 +21,9 @@ export interface NovelAIImageOptions {
   proxyUrl?: string
 }
 
-// V3 模型默认负面词
-const DEFAULT_NEGATIVE_V3 =
-  'lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry'
-
-// V4/V4.5 模型默认负面词
-const DEFAULT_NEGATIVE_V4 =
-  'very displeasing, lowres, bad, error, fewer, extra, missing, worst quality, jpeg artifacts, bad quality, watermark, unfinished, displeasing, chromatic aberration, signature, extra digits, artistic error, username, scan, abstract'
+// 所有模型统一使用的负面提示词
+const DEFAULT_NEGATIVE_PROMPT =
+  'deformed fingers, extra arms, fused legs, twisted limbs, three heads six arms, dislocated joints, double-headed penis, bifurcated penis, three testicles, extra vagina, misplaced anus, melted face, collapsed eye sockets, blank eye sockets, no pupils, exposed teeth, misaligned teeth, jagged teeth, blurry, low quality, low resolution, jitter effect, pixelation, mosaic, censorship bars, holy light, blur lines, black bar covering, clothed, underwear, bra, lingerie covering, shemale features, male breasts, flat chest, androgynous, shota, loli, cartoonish, monochrome, black and white, overexposure, underexposure, too dark to see, excessive oily reflection, plastic texture, wrong anatomy, severed limbs, unrealistic blood clots, fake shit and piss, clean background, aesthetic, romantic, innocent, warm, smile, pure expression, hairless, shaved pubic hair, smooth skin, frigid atmosphere, ascetic, sacred, religious symbols, cross, nun outfit'
 
 /** 判断是否为 V4/V4.5 模型（需要 v4_prompt 结构） */
 function isV4Model(model: string): boolean {
@@ -138,7 +134,7 @@ export async function generateNovelAIImage(options: NovelAIImageOptions): Promis
     proxyUrl,
   } = options
 
-  const negativePrompt = options.negativePrompt ?? (isV4Model(model) ? DEFAULT_NEGATIVE_V4 : DEFAULT_NEGATIVE_V3)
+  const negativePrompt = options.negativePrompt ?? DEFAULT_NEGATIVE_PROMPT
 
   const base = proxyUrl ? proxyUrl.replace(/\/$/, '') : NOVELAI_IMAGE_BASE
   const url = `${base}/ai/generate-image`

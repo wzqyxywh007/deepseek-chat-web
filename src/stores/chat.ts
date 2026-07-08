@@ -8,6 +8,7 @@ import { useSettingsStore } from './settings'
 import { toast, translateApiError } from '@/utils/toast'
 import type { ParsedFile } from '@/utils/fileParser'
 import { buildApiContent, toAttachmentMeta } from '@/utils/fileParser'
+import { buildNovelAIPrompt } from '@/utils/novelaiPrompt'
 
 function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2)
@@ -109,8 +110,21 @@ export const useChatStore = defineStore('chat', () => {
   ) {
     try {
       const provider = getProvider(settingsStore.model)
+
+      let finalPrompt = prompt
+
+      if (provider === 'novelai') {
+        // 收集本 session 内所有用户消息（包含当前这条），用于多轮上下文整合 + 中译英
+        const userMessages = (session as unknown as { messages: Message[] }).messages
+          .filter(m => m.role === 'user' && m.content.trim())
+          .map(m => m.content)
+
+        // 静默调用 DeepSeek 翻译，失败则原样发送
+        finalPrompt = await buildNovelAIPrompt(userMessages, settingsStore.apiKey)
+      }
+
       const imageOpts: ImageAPIOptions = {
-        prompt,
+        prompt: finalPrompt,
         modelId: settingsStore.model,
         apiKey: provider === 'novelai' ? settingsStore.novelaiApiKey : settingsStore.doubaoApiKey,
         proxyUrl: provider === 'novelai'
