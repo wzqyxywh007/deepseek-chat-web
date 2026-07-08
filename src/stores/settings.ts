@@ -14,7 +14,6 @@ export const useSettingsStore = defineStore('settings', () => {
   const doubaoApiKey = ref(raw.doubaoApiKey ?? '')
   const doubaoProxyUrl = ref(raw.doubaoProxyUrl ?? '')
   const novelaiApiKey = ref(raw.novelaiApiKey ?? '')
-  const novelaiProxyUrl = ref(raw.novelaiProxyUrl ?? '')
   const model = ref<ModelId>(migrated.model)
   // 若 localStorage 中已有明确的 thinkingMode，优先使用；否则用迁移结果
   const thinkingMode = ref<boolean>(raw.thinkingMode ?? migrated.thinkingMode)
@@ -44,7 +43,6 @@ export const useSettingsStore = defineStore('settings', () => {
       doubaoApiKey: doubaoApiKey.value,
       doubaoProxyUrl: doubaoProxyUrl.value,
       novelaiApiKey: novelaiApiKey.value,
-      novelaiProxyUrl: novelaiProxyUrl.value,
       model: model.value,
       thinkingMode: thinkingMode.value,
       reasoningEffort: reasoningEffort.value,
@@ -53,14 +51,13 @@ export const useSettingsStore = defineStore('settings', () => {
     })
   }
 
-  watch([apiKey, doubaoApiKey, doubaoProxyUrl, novelaiApiKey, novelaiProxyUrl, model, thinkingMode, reasoningEffort, systemPrompt, theme], save)
+  watch([apiKey, doubaoApiKey, doubaoProxyUrl, novelaiApiKey, model, thinkingMode, reasoningEffort, systemPrompt, theme], save)
 
   return {
     apiKey,
     doubaoApiKey,
     doubaoProxyUrl,
     novelaiApiKey,
-    novelaiProxyUrl,
     model,
     thinkingMode,
     reasoningEffort,

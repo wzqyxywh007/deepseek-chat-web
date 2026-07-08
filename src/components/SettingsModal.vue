@@ -83,23 +83,6 @@
             </p>
           </div>
 
-          <!-- ── NovelAI 代理地址 ── -->
-          <div class="form-group">
-            <label class="form-label">
-              NovelAI 代理地址
-              <span class="form-label__tag form-label__tag--optional">可选</span>
-            </label>
-            <input
-              v-model="form.novelaiProxyUrl"
-              type="text"
-              class="form-input"
-              placeholder="https://your-novelai-proxy.example.com"
-              autocomplete="off"
-              spellcheck="false"
-            />
-            <p class="form-hint">直连 image.novelai.net 可能跨域，填写代理可解决。留空则直连。</p>
-          </div>
-
           <!-- ── 豆包 CORS 代理地址 ── -->
           <div class="form-group">
             <label class="form-label">
@@ -357,7 +340,6 @@ const form = ref({
   doubaoApiKey: '',
   doubaoProxyUrl: '',
   novelaiApiKey: '',
-  novelaiProxyUrl: '',
   model: 'deepseek-v4-pro' as ModelId,
   thinkingMode: true,
   reasoningEffort: 'high' as ReasoningEffort,
@@ -375,7 +357,6 @@ watch(() => props.visible, (v) => {
       doubaoApiKey: settingsStore.doubaoApiKey,
       doubaoProxyUrl: settingsStore.doubaoProxyUrl,
       novelaiApiKey: settingsStore.novelaiApiKey,
-      novelaiProxyUrl: settingsStore.novelaiProxyUrl,
       model: settingsStore.model,
       thinkingMode: settingsStore.thinkingMode,
       reasoningEffort: settingsStore.reasoningEffort,
@@ -393,7 +374,6 @@ function save() {
   settingsStore.doubaoApiKey = form.value.doubaoApiKey.trim()
   settingsStore.doubaoProxyUrl = form.value.doubaoProxyUrl.trim()
   settingsStore.novelaiApiKey = form.value.novelaiApiKey.trim()
-  settingsStore.novelaiProxyUrl = form.value.novelaiProxyUrl.trim()
   settingsStore.model = form.value.model
   settingsStore.thinkingMode = form.value.thinkingMode
   settingsStore.reasoningEffort = form.value.reasoningEffort

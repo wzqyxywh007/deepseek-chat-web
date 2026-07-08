@@ -132,9 +132,7 @@ export const useChatStore = defineStore('chat', () => {
         prompt: finalPrompt,
         modelId: settingsStore.model,
         apiKey: provider === 'novelai' ? settingsStore.novelaiApiKey : settingsStore.doubaoApiKey,
-        proxyUrl: provider === 'novelai'
-          ? (settingsStore.novelaiProxyUrl || undefined)
-          : (settingsStore.doubaoProxyUrl || undefined),
+        proxyUrl: provider === 'novelai' ? undefined : (settingsStore.doubaoProxyUrl || undefined),
       }
       const urls = await callImageAPI(imageOpts)
       reactiveAiMsg.generatedImages = urls
