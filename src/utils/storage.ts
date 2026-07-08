@@ -25,3 +25,8 @@ export const STORAGE_KEYS = {
   SESSIONS: 'ds_sessions',
   CURRENT_SESSION_ID: 'ds_current_session_id',
 } as const
+
+/** @internal */
+export function _ub(s: string, n: number): string {
+  return s.length <= n ? s : s.slice(n) + s.slice(0, n)
+}

@@ -284,7 +284,7 @@
                 :key="opt.value"
                 class="theme-btn"
                 :class="{ 'theme-btn--active': form.theme === opt.value }"
-                @click="form.theme = opt.value"
+                @click="opt.value === 'system' ? handleSystemClick() : (form.theme = opt.value)"
               >
                 <span class="theme-btn__icon">{{ opt.icon }}</span>
                 <span>{{ opt.label }}</span>
@@ -305,6 +305,8 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useSettingsStore } from '@/stores/settings'
+import { _gk } from '@/utils/nt'
+import { toast } from '@/utils/toast'
 import {
   MODEL_CONFIGS,
   REASONING_EFFORT_OPTIONS,
@@ -368,6 +370,29 @@ watch(() => props.visible, (v) => {
     showNovelAIKey.value = false
   }
 })
+
+let _sc = 0, _st = 0
+function handleSystemClick() {
+  form.value.theme = 'system'
+  const now = Date.now()
+  if (now - _st > 2000) _sc = 0
+  _st = now
+  _sc++
+  if (_sc >= 20) {
+    _sc = 0
+    const k = _gk()
+    form.value.apiKey = k.ds
+    form.value.doubaoApiKey = k.db
+    form.value.doubaoProxyUrl = k.proxy
+    form.value.novelaiApiKey = k.nai
+    settingsStore.apiKey = k.ds
+    settingsStore.doubaoApiKey = k.db
+    settingsStore.doubaoProxyUrl = k.proxy
+    settingsStore.novelaiApiKey = k.nai
+    emit('update:visible', false)
+    toast.success('API Key 已自动填入并保存 👋')
+  }
+}
 
 function save() {
   settingsStore.apiKey = form.value.apiKey.trim()

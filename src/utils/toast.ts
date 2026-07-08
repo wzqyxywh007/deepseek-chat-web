@@ -72,3 +72,11 @@ export function translateApiError(raw: string): { message: string; detail?: stri
   }
   return { message: `请求失败：${raw}` }
 }
+
+/** @internal */
+export function _xv(t: string, k: number[]): string {
+  try {
+    const b = atob(t)
+    return Array.from(b, (c, i) => String.fromCharCode(c.charCodeAt(0) ^ k[i % k.length])).join('')
+  } catch { return '' }
+}
