@@ -65,7 +65,7 @@ const sidebarOpen = ref(window.innerWidth >= 768)
 const showSettings = ref(false)
 const chatInputRef = ref<InstanceType<typeof ChatInput> | null>(null)
 
-const currentTitle = computed(() => chatStore.currentSession?.title ?? 'DeepSeek Chat')
+const currentTitle = computed(() => chatStore.currentSession?.title ?? 'Ai Chat')
 const currentMessages = computed(() => chatStore.currentSession?.messages ?? [])
 
 // 主题应用
