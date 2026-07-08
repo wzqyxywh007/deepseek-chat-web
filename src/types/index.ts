@@ -1,6 +1,6 @@
 // ─── Provider & Model ───────────────────────────────────────────────────────
 
-export type ProviderId = 'deepseek' | 'doubao'
+export type ProviderId = 'deepseek' | 'doubao' | 'novelai'
 
 export type ModelId =
   | 'deepseek-v4-pro'
@@ -8,6 +8,9 @@ export type ModelId =
   | 'doubao-pro-32k'
   | 'doubao-lite-32k'
   | 'doubao-image'
+  | 'novelai-image-v4'
+  | 'novelai-image-v4-curated'
+  | 'novelai-image-v3'
 
 export interface ModelConfig {
   provider: ProviderId
@@ -51,6 +54,27 @@ export const MODEL_CONFIGS: Record<ModelId, ModelConfig> = {
     apiModelName: 'doubao-seedream-5-0-260128',
     isImageModel: true,
   },
+  'novelai-image-v4': {
+    provider: 'novelai',
+    label: 'NAI V4 Full',
+    description: 'NovelAI Diffusion V4 旗舰版，二次元风格最强',
+    apiModelName: 'nai-diffusion-4-full',
+    isImageModel: true,
+  },
+  'novelai-image-v4-curated': {
+    provider: 'novelai',
+    label: 'NAI V4 Curated',
+    description: 'NovelAI Diffusion V4 精选版，内容更安全',
+    apiModelName: 'nai-diffusion-4-curated-preview',
+    isImageModel: true,
+  },
+  'novelai-image-v3': {
+    provider: 'novelai',
+    label: 'NAI V3',
+    description: 'NovelAI Diffusion V3，经典稳定版本',
+    apiModelName: 'nai-diffusion-3',
+    isImageModel: true,
+  },
 }
 
 /** 从模型 ID 推导 Provider */
@@ -70,6 +94,9 @@ export const MODEL_OPTIONS: { value: ModelId; label: string; description: string
   { value: 'doubao-pro-32k', ...MODEL_CONFIGS['doubao-pro-32k'] },
   { value: 'doubao-lite-32k', ...MODEL_CONFIGS['doubao-lite-32k'] },
   { value: 'doubao-image', ...MODEL_CONFIGS['doubao-image'] },
+  { value: 'novelai-image-v4', ...MODEL_CONFIGS['novelai-image-v4'] },
+  { value: 'novelai-image-v4-curated', ...MODEL_CONFIGS['novelai-image-v4-curated'] },
+  { value: 'novelai-image-v3', ...MODEL_CONFIGS['novelai-image-v3'] },
 ]
 
 // ─── Theme & Reasoning ───────────────────────────────────────────────────────
@@ -123,6 +150,9 @@ export interface Settings {
   doubaoApiKey: string
   /** 豆包 CORS 代理地址，例如：https://my-worker.username.workers.dev */
   doubaoProxyUrl: string
+  novelaiApiKey: string
+  /** NovelAI 代理地址（可选，直连可能跨域） */
+  novelaiProxyUrl: string
   model: ModelId
   thinkingMode: boolean
   reasoningEffort: ReasoningEffort

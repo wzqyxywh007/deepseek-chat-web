@@ -2,7 +2,8 @@ import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import type { Session, Message, ChatMessage } from '@/types'
 import { storageGet, storageSet, STORAGE_KEYS } from '@/utils/storage'
-import { callChatAPI, callImageAPI, isImageModel } from '@/api/index'
+import { callChatAPI, callImageAPI, isImageModel, type ImageAPIOptions } from '@/api/index'
+import { getProvider } from '@/types'
 import { useSettingsStore } from './settings'
 import { toast, translateApiError } from '@/utils/toast'
 import type { ParsedFile } from '@/utils/fileParser'
@@ -107,12 +108,16 @@ export const useChatStore = defineStore('chat', () => {
     reactiveAiMsg: Message,
   ) {
     try {
-      const urls = await callImageAPI(
+      const provider = getProvider(settingsStore.model)
+      const imageOpts: ImageAPIOptions = {
         prompt,
-        settingsStore.doubaoApiKey,
-        settingsStore.model,
-        settingsStore.doubaoProxyUrl || undefined,
-      )
+        modelId: settingsStore.model,
+        apiKey: provider === 'novelai' ? settingsStore.novelaiApiKey : settingsStore.doubaoApiKey,
+        proxyUrl: provider === 'novelai'
+          ? (settingsStore.novelaiProxyUrl || undefined)
+          : (settingsStore.doubaoProxyUrl || undefined),
+      }
+      const urls = await callImageAPI(imageOpts)
       reactiveAiMsg.generatedImages = urls
       reactiveAiMsg.content = ''
       reactiveAiMsg.isStreaming = false

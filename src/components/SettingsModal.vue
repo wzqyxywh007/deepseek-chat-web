@@ -57,6 +57,49 @@
             <p class="form-hint">Key 仅存储在本地浏览器，不会上传到任何服务器</p>
           </div>
 
+          <!-- ── NovelAI API Key ── -->
+          <div class="form-group">
+            <label class="form-label">
+              NovelAI API Token
+              <a href="https://novelai.net/" target="_blank" class="form-label__link">
+                获取 Token →
+              </a>
+            </label>
+            <div class="input-wrap">
+              <input
+                v-model="form.novelaiApiKey"
+                :type="showNovelAIKey ? 'text' : 'password'"
+                class="form-input"
+                placeholder="pst-..."
+                autocomplete="off"
+                spellcheck="false"
+              />
+              <button class="input-toggle" @click="showNovelAIKey = !showNovelAIKey" :title="showNovelAIKey ? '隐藏' : '显示'">
+                {{ showNovelAIKey ? '🙈' : '👁️' }}
+              </button>
+            </div>
+            <p class="form-hint">
+              登录 NovelAI 网站后，打开浏览器开发者工具 → Application → Local Storage → https://novelai.net → 找 <code>session</code> 字段复制即可。Key 仅存储在本地浏览器。
+            </p>
+          </div>
+
+          <!-- ── NovelAI 代理地址 ── -->
+          <div class="form-group">
+            <label class="form-label">
+              NovelAI 代理地址
+              <span class="form-label__tag form-label__tag--optional">可选</span>
+            </label>
+            <input
+              v-model="form.novelaiProxyUrl"
+              type="text"
+              class="form-input"
+              placeholder="https://your-novelai-proxy.example.com"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <p class="form-hint">直连 image.novelai.net 可能跨域，填写代理可解决。留空则直连。</p>
+          </div>
+
           <!-- ── 豆包 CORS 代理地址 ── -->
           <div class="form-group">
             <label class="form-label">
@@ -172,6 +215,27 @@
                 <span v-if="form.model === opt.id" class="model-option__check">✓</span>
               </label>
             </div>
+
+            <!-- NovelAI 分组 -->
+            <p class="model-group-label" style="margin-top: 12px;">NovelAI（二次元生图）</p>
+            <div class="model-options">
+              <label
+                v-for="opt in novelaiModels"
+                :key="opt.id"
+                class="model-option model-option--novelai"
+                :class="{ 'model-option--active model-option--novelai-active': form.model === opt.id }"
+              >
+                <input type="radio" v-model="form.model" :value="opt.id" class="sr-only" />
+                <div class="model-option__content">
+                  <span class="model-option__name">
+                    {{ opt.config.label }}
+                    <span class="model-badge model-badge--novelai">图片生成</span>
+                  </span>
+                  <span class="model-option__desc">{{ opt.config.description }}</span>
+                </div>
+                <span v-if="form.model === opt.id" class="model-option__check model-option__check--novelai">✓</span>
+              </label>
+            </div>
           </div>
 
           <!-- ── 思考模式（仅 DeepSeek 模型显示） ── -->
@@ -282,14 +346,18 @@ const THEME_OPTIONS: { value: ThemeMode; label: string; icon: string }[] = [
 const allModels = Object.entries(MODEL_CONFIGS).map(([id, config]) => ({ id: id as ModelId, config }))
 const deepseekModels = allModels.filter(m => m.config.provider === 'deepseek')
 const doubaoModels = allModels.filter(m => m.config.provider === 'doubao')
+const novelaiModels = allModels.filter(m => m.config.provider === 'novelai')
 
 const showKey = ref(false)
 const showDoubaoKey = ref(false)
+const showNovelAIKey = ref(false)
 
 const form = ref({
   apiKey: '',
   doubaoApiKey: '',
   doubaoProxyUrl: '',
+  novelaiApiKey: '',
+  novelaiProxyUrl: '',
   model: 'deepseek-v4-pro' as ModelId,
   thinkingMode: true,
   reasoningEffort: 'high' as ReasoningEffort,
@@ -306,6 +374,8 @@ watch(() => props.visible, (v) => {
       apiKey: settingsStore.apiKey,
       doubaoApiKey: settingsStore.doubaoApiKey,
       doubaoProxyUrl: settingsStore.doubaoProxyUrl,
+      novelaiApiKey: settingsStore.novelaiApiKey,
+      novelaiProxyUrl: settingsStore.novelaiProxyUrl,
       model: settingsStore.model,
       thinkingMode: settingsStore.thinkingMode,
       reasoningEffort: settingsStore.reasoningEffort,
@@ -314,6 +384,7 @@ watch(() => props.visible, (v) => {
     }
     showKey.value = false
     showDoubaoKey.value = false
+    showNovelAIKey.value = false
   }
 })
 
@@ -321,6 +392,8 @@ function save() {
   settingsStore.apiKey = form.value.apiKey.trim()
   settingsStore.doubaoApiKey = form.value.doubaoApiKey.trim()
   settingsStore.doubaoProxyUrl = form.value.doubaoProxyUrl.trim()
+  settingsStore.novelaiApiKey = form.value.novelaiApiKey.trim()
+  settingsStore.novelaiProxyUrl = form.value.novelaiProxyUrl.trim()
   settingsStore.model = form.value.model
   settingsStore.thinkingMode = form.value.thinkingMode
   settingsStore.reasoningEffort = form.value.reasoningEffort
@@ -480,6 +553,18 @@ function cancel() {
   background: rgba(234, 88, 12, 0.1);
   color: #ea580c;
 }
+.form-label__tag--optional {
+  background: rgba(100, 116, 139, 0.1);
+  color: #64748b;
+}
+
+code {
+  font-family: monospace;
+  background: var(--bg-secondary);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 11px;
+}
 
 .form-hint__link {
   color: var(--accent);
@@ -595,6 +680,23 @@ function cancel() {
 .model-badge--image {
   background: rgba(124, 58, 237, 0.12);
   color: #7c3aed;
+}
+.model-badge--novelai {
+  background: rgba(236, 72, 153, 0.12);
+  color: #db2777;
+}
+
+/* NovelAI 模型选项 */
+.model-option--novelai:hover {
+  border-color: #db2777;
+  background: rgba(236, 72, 153, 0.06);
+}
+.model-option--novelai-active {
+  border-color: #db2777 !important;
+  background: rgba(236, 72, 153, 0.06) !important;
+}
+.model-option__check--novelai {
+  color: #db2777;
 }
 
 .sr-only {

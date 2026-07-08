@@ -3,6 +3,7 @@ import type { ModelId } from '@/types'
 import { streamChat } from './deepseek'
 import type { StreamChatOptions } from './deepseek'
 import { streamDoubaoChat, generateDoubaoImage } from './doubao'
+import { generateNovelAIImage } from './novelai'
 
 export type { StreamChatOptions }
 
@@ -22,18 +23,51 @@ export function callChatAPI(options: StreamChatOptions & { proxyUrl?: string }):
   return streamChat(normalized)
 }
 
+export interface ImageAPIOptions {
+  prompt: string
+  apiKey: string
+  modelId: ModelId
+  proxyUrl?: string
+}
+
 /**
- * 豆包图片生成入口。
- * @returns 图片 URL 数组
+ * 统一图片生成入口，根据 Provider 自动分发。
+ * @returns 图片 URL 数组（NovelAI 返回 blob URL，豆包返回远程 URL）
  */
+export async function callImageAPI(options: ImageAPIOptions): Promise<string[]>
+/** @deprecated 请使用对象参数形式 */
 export async function callImageAPI(
   prompt: string,
   apiKey: string,
   modelId: ModelId,
   proxyUrl?: string,
+): Promise<string[]>
+export async function callImageAPI(
+  promptOrOptions: string | ImageAPIOptions,
+  apiKey?: string,
+  modelId?: ModelId,
+  proxyUrl?: string,
 ): Promise<string[]> {
-  const apiModelName = MODEL_CONFIGS[modelId]?.apiModelName ?? modelId
-  return generateDoubaoImage({ prompt, apiKey, model: apiModelName, proxyUrl })
+  let opts: ImageAPIOptions
+  if (typeof promptOrOptions === 'string') {
+    opts = { prompt: promptOrOptions, apiKey: apiKey!, modelId: modelId!, proxyUrl }
+  } else {
+    opts = promptOrOptions
+  }
+
+  const apiModelName = MODEL_CONFIGS[opts.modelId]?.apiModelName ?? opts.modelId
+  const provider = getProvider(opts.modelId)
+
+  if (provider === 'novelai') {
+    return generateNovelAIImage({
+      prompt: opts.prompt,
+      apiKey: opts.apiKey,
+      model: apiModelName,
+      proxyUrl: opts.proxyUrl,
+    })
+  }
+
+  return generateDoubaoImage({ prompt: opts.prompt, apiKey: opts.apiKey, model: apiModelName, proxyUrl: opts.proxyUrl })
 }
 
 export { isImageModel }
