@@ -35,6 +35,14 @@
           </template>
           <template v-else>
             <span class="session-item__title">{{ session.title }}</span>
+            <span
+              v-if="modelBadge(session.modelId)"
+              class="session-item__badge"
+              :style="{ background: modelBadge(session.modelId)!.color + '22', color: modelBadge(session.modelId)!.color }"
+              :title="MODEL_CONFIGS[session.modelId!]?.label"
+            >
+              {{ modelBadge(session.modelId)!.label }}
+            </span>
             <div class="session-item__actions" @click.stop>
               <button
                 class="action-btn"
@@ -57,6 +65,20 @@
 <script setup lang="ts">
 import { ref, nextTick, onMounted, onUnmounted } from 'vue'
 import { useChatStore } from '@/stores/chat'
+import { MODEL_CONFIGS } from '@/types'
+import type { ModelId } from '@/types'
+
+function modelBadge(modelId?: ModelId): { label: string; color: string } | null {
+  if (!modelId) return null
+  const cfg = MODEL_CONFIGS[modelId]
+  if (!cfg) return null
+  const provider = cfg.provider
+  const isImage = cfg.isImageModel
+  if (provider === 'novelai') return { label: 'NAI', color: '#db2777' }
+  if (provider === 'doubao' && isImage) return { label: '豆包图', color: '#7c3aed' }
+  if (provider === 'doubao') return { label: '豆包', color: '#10b981' }
+  return { label: 'DS', color: '#1a6bf7' }
+}
 
 defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{ 'update:modelValue': [val: boolean] }>()
@@ -200,6 +222,18 @@ function cancelRename() {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
+}
+
+.session-item__badge {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 4px;
+  letter-spacing: 0.02em;
+  line-height: 1.6;
+  opacity: 0.9;
 }
 
 .session-item__actions {

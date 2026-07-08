@@ -80,6 +80,11 @@ export const useChatStore = defineStore('chat', () => {
   function switchSession(id: string) {
     abortStream()
     currentSessionId.value = id
+    // 若该历史对话有绑定模型，自动切换过去
+    const session = sessions.value.find(s => s.id === id)
+    if (session?.modelId) {
+      settingsStore.model = session.modelId
+    }
   }
 
   function renameSession(id: string, title: string) {
@@ -163,6 +168,11 @@ export const useChatStore = defineStore('chat', () => {
       createdAt: Date.now(),
     }
     session.messages.push(userMsg)
+
+    // 首次发送消息时，将当前模型绑定到该对话
+    if (!session.modelId) {
+      session.modelId = settingsStore.model
+    }
 
     if (session.title === '新对话' && session.messages.length === 1) {
       session.title = trimmed.slice(0, 20) || '图片生成'

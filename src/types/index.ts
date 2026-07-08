@@ -159,6 +159,8 @@ export interface Session {
   id: string
   title: string
   messages: Message[]
+  /** 该对话绑定的模型，首次发送消息时写入，切换历史时自动恢复 */
+  modelId?: ModelId
   createdAt: number
   updatedAt: number
 }
