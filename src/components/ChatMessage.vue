@@ -6,11 +6,11 @@
 
     <div class="message__body">
       <!-- 思考链 -->
-      <ReasoningBlock
+      <!-- <ReasoningBlock
         v-if="message.role === 'assistant' && message.reasoningContent"
         :reasoning="message.reasoningContent"
         :is-streaming="!!message.isStreaming"
-      />
+      /> -->
 
       <!-- 用户附件 -->
       <div v-if="message.role === 'user' && message.attachments?.length" class="message__attachments">
