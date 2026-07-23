@@ -157,13 +157,14 @@ export const useChatStore = defineStore('chat', () => {
     abortStream()
 
     const trimmed = userContent.trim()
+    const sendTime = Date.now()
 
     const userMsg: Message = {
       id: generateId(),
       role: 'user',
       content: trimmed,
       attachments: attachments.map(toAttachmentMeta),
-      createdAt: Date.now(),
+      createdAt: sendTime,
     }
     session.messages.push(userMsg)
 
@@ -176,13 +177,20 @@ export const useChatStore = defineStore('chat', () => {
       session.title = trimmed.slice(0, 20) || '图片生成'
     }
 
+    // 是否为支持深度思考的模型（用于展示思考计时条）
+    const thinkingEnabled = !isImageModel(settingsStore.model)
+      && getProvider(settingsStore.model) === 'deepseek'
+      && settingsStore.thinkingMode
+
     const aiMsg: Message = {
       id: generateId(),
       role: 'assistant',
       content: '',
       reasoningContent: '',
       isStreaming: true,
-      createdAt: Date.now(),
+      createdAt: sendTime,
+      thinkingEnabled,
+      thinkingStartAt: sendTime,
     }
     session.messages.push(aiMsg)
     session.updatedAt = Date.now()
@@ -209,6 +217,12 @@ export const useChatStore = defineStore('chat', () => {
 
     abortController = new AbortController()
 
+    const markThinkingEnd = () => {
+      if (reactiveAiMsg.thinkingEndAt == null) {
+        reactiveAiMsg.thinkingEndAt = Date.now()
+      }
+    }
+
     try {
       await callChatAPI({
         messages: history,
@@ -217,14 +231,22 @@ export const useChatStore = defineStore('chat', () => {
         thinkingMode: settingsStore.thinkingMode,
         reasoningEffort: settingsStore.reasoningEffort,
         proxyUrl: settingsStore.doubaoProxyUrl || undefined,
-        onReasoning: (delta) => { reactiveAiMsg.reasoningContent = (reactiveAiMsg.reasoningContent ?? '') + delta },
-        onContent: (delta) => { reactiveAiMsg.content += delta },
+        onReasoning: (delta) => {
+          reactiveAiMsg.reasoningContent = (reactiveAiMsg.reasoningContent ?? '') + delta
+        },
+        onContent: (delta) => {
+          // 收到正式回复内容，说明思考阶段结束
+          markThinkingEnd()
+          reactiveAiMsg.content += delta
+        },
         onDone: () => {
+          markThinkingEnd()
           reactiveAiMsg.isStreaming = false
           abortController = null
           session.updatedAt = Date.now()
         },
         onError: (err) => {
+          markThinkingEnd()
           reactiveAiMsg.isStreaming = false
           abortController = null
           if ((err as Error).name !== 'AbortError') {
@@ -237,6 +259,7 @@ export const useChatStore = defineStore('chat', () => {
         signal: abortController.signal,
       })
     } catch (e) {
+      markThinkingEnd()
       reactiveAiMsg.isStreaming = false
       abortController = null
     }
@@ -264,13 +287,22 @@ export const useChatStore = defineStore('chat', () => {
 
     session.messages.splice(idx)
 
+    const regenerateTime = Date.now()
+
+    // 是否为支持深度思考的模型（用于展示思考计时条）
+    const thinkingEnabled = !isImageModel(settingsStore.model)
+      && getProvider(settingsStore.model) === 'deepseek'
+      && settingsStore.thinkingMode
+
     const aiMsg: Message = {
       id: generateId(),
       role: 'assistant',
       content: '',
       reasoningContent: '',
       isStreaming: true,
-      createdAt: Date.now(),
+      createdAt: regenerateTime,
+      thinkingEnabled,
+      thinkingStartAt: regenerateTime,
     }
     session.messages.push(aiMsg)
     session.updatedAt = Date.now()
@@ -292,6 +324,12 @@ export const useChatStore = defineStore('chat', () => {
 
     abortController = new AbortController()
 
+    const markThinkingEnd = () => {
+      if (reactiveAiMsg.thinkingEndAt == null) {
+        reactiveAiMsg.thinkingEndAt = Date.now()
+      }
+    }
+
     try {
       await callChatAPI({
         messages: history,
@@ -300,14 +338,22 @@ export const useChatStore = defineStore('chat', () => {
         thinkingMode: settingsStore.thinkingMode,
         reasoningEffort: settingsStore.reasoningEffort,
         proxyUrl: settingsStore.doubaoProxyUrl || undefined,
-        onReasoning: (delta) => { reactiveAiMsg.reasoningContent = (reactiveAiMsg.reasoningContent ?? '') + delta },
-        onContent: (delta) => { reactiveAiMsg.content += delta },
+        onReasoning: (delta) => {
+          reactiveAiMsg.reasoningContent = (reactiveAiMsg.reasoningContent ?? '') + delta
+        },
+        onContent: (delta) => {
+          // 收到正式回复内容，说明思考阶段结束
+          markThinkingEnd()
+          reactiveAiMsg.content += delta
+        },
         onDone: () => {
+          markThinkingEnd()
           reactiveAiMsg.isStreaming = false
           abortController = null
           session.updatedAt = Date.now()
         },
         onError: (err) => {
+          markThinkingEnd()
           reactiveAiMsg.isStreaming = false
           abortController = null
           if ((err as Error).name !== 'AbortError') {
@@ -320,6 +366,7 @@ export const useChatStore = defineStore('chat', () => {
         signal: abortController.signal,
       })
     } catch (e) {
+      markThinkingEnd()
       reactiveAiMsg.isStreaming = false
       abortController = null
     }

@@ -5,12 +5,12 @@
     </div>
 
     <div class="message__body">
-      <!-- 思考链 -->
-      <!-- <ReasoningBlock
-        v-if="message.role === 'assistant' && message.reasoningContent"
-        :reasoning="message.reasoningContent"
-        :is-streaming="!!message.isStreaming"
-      /> -->
+      <!-- 思考链：仅展示思考用时，不展示思考内容 -->
+      <ReasoningBlock
+        v-if="message.role === 'assistant' && message.thinkingEnabled && message.thinkingStartAt"
+        :thinking-start-at="message.thinkingStartAt"
+        :thinking-end-at="message.thinkingEndAt"
+      />
 
       <!-- 用户附件 -->
       <div v-if="message.role === 'user' && message.attachments?.length" class="message__attachments">

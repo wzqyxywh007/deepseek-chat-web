@@ -153,6 +153,12 @@ export interface Message {
   /** 豆包图片生成模型返回的图片 URL 列表 */
   generatedImages?: string[]
   createdAt: number
+  /** 是否为深度思考模式下的回复（决定是否展示思考计时条） */
+  thinkingEnabled?: boolean
+  /** 思考计时开始时间（用户发出请求的时间点） */
+  thinkingStartAt?: number
+  /** 思考计时结束时间（收到第一个返回片段的时间点） */
+  thinkingEndAt?: number
 }
 
 export interface Session {
